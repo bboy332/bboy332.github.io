@@ -2,7 +2,8 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pillowcase Music Playlist</title>
+<title>Pillowcase Music Player</title>
+
 <style>
 body {
     background: #111;
@@ -23,6 +24,7 @@ audio {
 }
 </style>
 </head>
+
 <body>
 
 <h2 id="trackInfo">Loading...</h2>
@@ -35,25 +37,119 @@ audio {
 
 <script>
 
-let rawTracks = "";
 let tracks = [];
 let currentIndex = 0;
 let shuffle = false;
+let player = document.getElementById("player");
+
+//////////////////////////////////////////////////
+// LOAD TRACK LIST
+//////////////////////////////////////////////////
 
 fetch("tracks.txt")
   .then(res => res.text())
   .then(text => {
-    rawTracks = text;
-    tracks = rawTracks.split("\n").filter(t => t.trim() !== "");
+    tracks = text.split("\n").filter(t => t.trim() !== "");
     loadTrack(0);
   });
 
-function loadTrack(index) {
-    if (tracks.length === 0) return;
-    currentIndex = index;
-    document.getElementById("player").src = tracks[index];
-    document.getElementById("trackInfo").innerText = "Track " + (index + 1) + " / " + tracks.length;
+//////////////////////////////////////////////////
+// URL STRATEGY (KEY PART)
+//////////////////////////////////////////////////
+
+function getVariants(url) {
+    let id = url.split("/").pop();
+
+    return [
+        `https://api.pillows.su/api/download/${id}`, // original
+        `https://pillows.su/api/file/${id}`,         // possible stream
+        `https://pillows.su/f/${id}?download=false`, // inline attempt
+    ];
 }
+
+//////////////////////////////////////////////////
+// LOAD TRACK WITH FALLBACKS
+//////////////////////////////////////////////////
+
+async function loadTrack(index) {
+    if (!tracks.length) return;
+
+    currentIndex = index;
+    let original = tracks[index];
+    let variants = getVariants(original);
+
+    document.getElementById("trackInfo").innerText =
+        `Loading track ${index + 1} / ${tracks.length}...`;
+
+    for (let url of variants) {
+        let success = await tryPlay(url);
+        if (success) {
+            document.getElementById("trackInfo").innerText =
+                `Track ${index + 1} / ${tracks.length}`;
+            preloadNext();
+            return;
+        }
+    }
+
+    console.log("Skipping broken track:", original);
+    nextTrack(); // skip if ALL fail
+}
+
+//////////////////////////////////////////////////
+// TRY PLAY METHOD
+//////////////////////////////////////////////////
+
+function tryPlay(url) {
+    return new Promise(resolve => {
+
+        let timeout = setTimeout(() => {
+            resolve(false);
+        }, 4000);
+
+        player.src = url;
+        player.load();
+
+        player.oncanplay = () => {
+            clearTimeout(timeout);
+            resolve(true);
+        };
+
+        player.onerror = async () => {
+            clearTimeout(timeout);
+
+            // fallback: try fetch blob
+            try {
+                let res = await fetch(url);
+                let blob = await res.blob();
+                let blobUrl = URL.createObjectURL(blob);
+
+                player.src = blobUrl;
+                resolve(true);
+            } catch {
+                resolve(false);
+            }
+        };
+    });
+}
+
+//////////////////////////////////////////////////
+// PRELOAD NEXT TRACK
+//////////////////////////////////////////////////
+
+function preloadNext() {
+    let nextIndex = (currentIndex + 1) % tracks.length;
+    let id = tracks[nextIndex].split("/").pop();
+
+    let link = document.createElement("link");
+    link.rel = "preload";
+    link.as = "audio";
+    link.href = `https://api.pillows.su/api/download/${id}`;
+    document.head.appendChild(link);
+}
+
+//////////////////////////////////////////////////
+// CONTROLS
+//////////////////////////////////////////////////
 
 function nextTrack() {
     if (shuffle) {
@@ -71,8 +167,17 @@ function prevTrack() {
 
 function toggleShuffle() {
     shuffle = !shuffle;
-    document.querySelector("button[onclick='toggleShuffle()']").innerText = "Shuffle: " + (shuffle ? "ON" : "OFF");
+    document.querySelector("button[onclick='toggleShuffle()']").innerText =
+        "Shuffle: " + (shuffle ? "ON" : "OFF");
 }
+
+//////////////////////////////////////////////////
+// AUTO NEXT
+//////////////////////////////////////////////////
+
+player.addEventListener("ended", () => {
+    nextTrack();
+});
 
 </script>
 
