@@ -3,31 +3,13 @@
 <head>
 <meta charset="UTF-8">
 <title>Pillowcase Music Player</title>
-
 <style>
-body {
-    background: #111;
-    color: white;
-    font-family: Arial, sans-serif;
-    text-align: center;
-    padding: 40px;
-}
-button {
-    padding: 10px 20px;
-    margin: 5px;
-    font-size: 16px;
-    cursor: pointer;
-}
-audio {
-    width: 80%;
-    margin-top: 20px;
-}
-#trackInfo {
-    min-height: 30px;
-}
+body { background: #111; color: white; font-family: Arial, sans-serif; text-align: center; padding: 40px; }
+button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
+audio { width: 80%; margin-top: 20px; }
+#trackInfo { min-height: 50px; }
 </style>
 </head>
-
 <body>
 
 <h2 id="trackInfo">Loading...</h2>
@@ -39,119 +21,75 @@ audio {
 <button onclick="toggleShuffle()">Shuffle: OFF</button>
 
 <script>
-
 let tracks = [];
 let currentIndex = 0;
 let shuffle = false;
 let player = document.getElementById("player");
 
-//////////////////////////////////////////////////
-// LOAD TRACK LIST
-//////////////////////////////////////////////////
-
 fetch("tracks.txt")
   .then(res => res.text())
   .then(text => {
     tracks = text.split("\n").filter(t => t.trim() !== "");
-    if (tracks.length > 0) loadTrack(0);
-  })
-  .catch(err => {
-    document.getElementById("trackInfo").innerText = "Failed to load tracks.txt";
-    console.error(err);
+    if (tracks.length) loadTrack(0);
   });
-
-//////////////////////////////////////////////////
-// URL STRATEGY - FIXED FOR PILLOWS.SU
-//////////////////////////////////////////////////
 
 function getVariants(id) {
     return [
-        `https://pillows.su/f/${id}`,                    // Best working direct stream
-        `https://pillows.su/api/download/${id}`,         // Fallback
-        `https://api.pillows.su/api/download/${id}`      // Original
+        `https://api.pillows.su/api/download/${id}`,   // Primary direct MP3
+        `https://pillows.su/api/file/${id}`,
+        `https://pillows.su/f/${id}`
     ];
 }
 
-//////////////////////////////////////////////////
-// LOAD TRACK WITH FALLBACKS
-//////////////////////////////////////////////////
-
 async function loadTrack(index) {
     if (!tracks.length) return;
-
     currentIndex = index;
     let id = tracks[index].trim();
-    
-    document.getElementById("trackInfo").innerText = 
-        `Loading track ${index + 1} / ${tracks.length}...`;
 
-    const variants = getVariants(id);
+    document.getElementById("trackInfo").innerText = `Loading ${index + 1} / ${tracks.length}...`;
 
-    for (let url of variants) {
+    for (let url of getVariants(id)) {
         let success = await tryPlay(url);
         if (success) {
-            document.getElementById("trackInfo").innerText = 
-                `Now playing: ${index + 1} / ${tracks.length}`;
+            document.getElementById("trackInfo").innerText = `Now Playing ${index + 1} / ${tracks.length}`;
             preloadNext();
             return;
         }
     }
 
-    console.log("All variants failed for track:", id);
-    nextTrack(); // skip broken track
+    console.log("Failed all variants for:", id);
+    setTimeout(nextTrack, 800); // small delay so you can see which ones fail
 }
-
-//////////////////////////////////////////////////
-// TRY PLAY - IMPROVED
-//////////////////////////////////////////////////
 
 function tryPlay(url) {
     return new Promise(resolve => {
-        const timeout = setTimeout(() => {
-            player.src = "";
-            resolve(false);
-        }, 6000);
+        const timeout = setTimeout(() => resolve(false), 8000);
 
         player.src = url;
         player.load();
 
-        const onSuccess = () => {
+        player.oncanplay = () => {
             clearTimeout(timeout);
-            player.oncanplay = null;
-            player.onerror = null;
-            player.onloadedmetadata = null;
             resolve(true);
         };
 
-        player.oncanplay = onSuccess;
-        player.onloadedmetadata = onSuccess;   // Extra safety
-
         player.onerror = () => {
             clearTimeout(timeout);
-            console.warn("Failed URL:", url);
+            console.warn("Failed:", url);
             resolve(false);
         };
     });
 }
 
-//////////////////////////////////////////////////
-// PRELOAD NEXT
-//////////////////////////////////////////////////
-
 function preloadNext() {
     if (currentIndex + 1 >= tracks.length) return;
     let nextId = tracks[currentIndex + 1].trim();
-    
     let link = document.createElement("link");
     link.rel = "preload";
     link.as = "audio";
-    link.href = `https://pillows.su/f/${nextId}`;
+    link.href = `https://api.pillows.su/api/download/${nextId}`;
     document.head.appendChild(link);
 }
-
-//////////////////////////////////////////////////
-// CONTROLS
-//////////////////////////////////////////////////
 
 function nextTrack() {
     if (shuffle) {
@@ -169,19 +107,10 @@ function prevTrack() {
 
 function toggleShuffle() {
     shuffle = !shuffle;
-    document.querySelector("button[onclick='toggleShuffle()']").innerText =
-        "Shuffle: " + (shuffle ? "ON" : "OFF");
+    document.querySelector("button[onclick='toggleShuffle()']").innerText = "Shuffle: " + (shuffle ? "ON" : "OFF");
 }
 
-//////////////////////////////////////////////////
-// AUTO NEXT
-//////////////////////////////////////////////////
-
-player.addEventListener("ended", () => {
-    nextTrack();
-});
-
+player.addEventListener("ended", nextTrack);
 </script>
-
 </body>
 </html>
