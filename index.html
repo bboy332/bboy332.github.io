@@ -22,6 +22,9 @@ audio {
     width: 80%;
     margin-top: 20px;
 }
+#trackInfo {
+    min-height: 30px;
+}
 </style>
 </head>
 
@@ -50,20 +53,22 @@ fetch("tracks.txt")
   .then(res => res.text())
   .then(text => {
     tracks = text.split("\n").filter(t => t.trim() !== "");
-    loadTrack(0);
+    if (tracks.length > 0) loadTrack(0);
+  })
+  .catch(err => {
+    document.getElementById("trackInfo").innerText = "Failed to load tracks.txt";
+    console.error(err);
   });
 
 //////////////////////////////////////////////////
-// URL STRATEGY (KEY PART)
+// URL STRATEGY - FIXED FOR PILLOWS.SU
 //////////////////////////////////////////////////
 
-function getVariants(url) {
-    let id = url.split("/").pop();
-
+function getVariants(id) {
     return [
-        `https://api.pillows.su/api/download/${id}`, // original
-        `https://pillows.su/api/file/${id}`,         // possible stream
-        `https://pillows.su/f/${id}?download=false`, // inline attempt
+        `https://pillows.su/f/${id}`,                    // Best working direct stream
+        `https://pillows.su/api/download/${id}`,         // Fallback
+        `https://api.pillows.su/api/download/${id}`      // Original
     ];
 }
 
@@ -75,75 +80,72 @@ async function loadTrack(index) {
     if (!tracks.length) return;
 
     currentIndex = index;
-    let original = tracks[index];
-    let variants = getVariants(original);
-
-    document.getElementById("trackInfo").innerText =
+    let id = tracks[index].trim();
+    
+    document.getElementById("trackInfo").innerText = 
         `Loading track ${index + 1} / ${tracks.length}...`;
+
+    const variants = getVariants(id);
 
     for (let url of variants) {
         let success = await tryPlay(url);
         if (success) {
-            document.getElementById("trackInfo").innerText =
-                `Track ${index + 1} / ${tracks.length}`;
+            document.getElementById("trackInfo").innerText = 
+                `Now playing: ${index + 1} / ${tracks.length}`;
             preloadNext();
             return;
         }
     }
 
-    console.log("Skipping broken track:", original);
-    nextTrack(); // skip if ALL fail
+    console.log("All variants failed for track:", id);
+    nextTrack(); // skip broken track
 }
 
 //////////////////////////////////////////////////
-// TRY PLAY METHOD
+// TRY PLAY - IMPROVED
 //////////////////////////////////////////////////
 
 function tryPlay(url) {
     return new Promise(resolve => {
-
-        let timeout = setTimeout(() => {
+        const timeout = setTimeout(() => {
+            player.src = "";
             resolve(false);
-        }, 4000);
+        }, 6000);
 
         player.src = url;
         player.load();
 
-        player.oncanplay = () => {
+        const onSuccess = () => {
             clearTimeout(timeout);
+            player.oncanplay = null;
+            player.onerror = null;
+            player.onloadedmetadata = null;
             resolve(true);
         };
 
-        player.onerror = async () => {
+        player.oncanplay = onSuccess;
+        player.onloadedmetadata = onSuccess;   // Extra safety
+
+        player.onerror = () => {
             clearTimeout(timeout);
-
-            // fallback: try fetch blob
-            try {
-                let res = await fetch(url);
-                let blob = await res.blob();
-                let blobUrl = URL.createObjectURL(blob);
-
-                player.src = blobUrl;
-                resolve(true);
-            } catch {
-                resolve(false);
-            }
+            console.warn("Failed URL:", url);
+            resolve(false);
         };
     });
 }
 
 //////////////////////////////////////////////////
-// PRELOAD NEXT TRACK
+// PRELOAD NEXT
 //////////////////////////////////////////////////
 
 function preloadNext() {
-    let nextIndex = (currentIndex + 1) % tracks.length;
-    let id = tracks[nextIndex].split("/").pop();
-
+    if (currentIndex + 1 >= tracks.length) return;
+    let nextId = tracks[currentIndex + 1].trim();
+    
     let link = document.createElement("link");
     link.rel = "preload";
     link.as = "audio";
-    link.href = `https://api.pillows.su/api/download/${id}`;
+    link.href = `https://pillows.su/f/${nextId}`;
     document.head.appendChild(link);
 }
 
