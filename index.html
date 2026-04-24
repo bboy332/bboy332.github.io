@@ -2,42 +2,51 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Music Playlist</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <title>Pillowcase Music Player</title>
     <style>
         body { font-family: Arial, sans-serif; background: #111; color: #fff; padding: 20px; text-align: center; }
-        button { padding: 12px 20px; margin: 8px; font-size: 16px; cursor: pointer; }
-        .now-playing { margin: 20px; font-size: 18px; min-height: 28px; }
+        button { padding: 12px 24px; margin: 8px; font-size: 17px; cursor: pointer; border-radius: 8px; }
+        .now-playing { margin: 30px; font-size: 20px; min-height: 30px; }
+        #status { color: #ff0; }
     </style>
 </head>
 <body>
-    <h1>My Pillowcase Music Collection</h1>
-    <div id="nowPlaying" class="now-playing">Click a song to play</div>
+    <h1>My Pillowcase Playlist</h1>
+    <div id="nowPlaying" class="now-playing">Ready — click a song</div>
+    <div id="status"></div>
 
-    <!-- Add your songs here from the spreadsheet -->
-    <button onclick="playSong('https://pillows.su/f/9281f17a3b740f3843fefdd75ec1d554', 'Lambo - Akachi Ruff')">▶ Lambo (Akachi) Ruff</button>
-    
-    <!-- Example of more buttons -->
-    <!-- <button onclick="playSong('OTHER_PILLOWS_LINK_HERE', 'Song Title')">▶ Song Title</button> -->
+    <button onclick="playSong('https://pillows.su/f/9281f17a3b740f3843fefdd75ec1d554', 'Lambo - Akachi Ruff')">
+        ▶ Lambo (Akachi) Ruff
+    </button>
+
+    <!-- Add more buttons from your spreadsheet here -->
 
     <script>
-        let currentSound = null;
+        let currentAudio = null;
 
         function playSong(url, title) {
-            // Stop previous song
-            if (currentSound) currentSound.stop();
+            if (currentAudio) currentAudio.pause();
 
             document.getElementById('nowPlaying').textContent = `Now Playing: ${title}`;
+            document.getElementById('status').textContent = 'Loading...';
 
-            currentSound = new Howl({
-                src: [url],
-                html5: true,           // Important for streaming large files
-                autoplay: true,
-                volume: 0.9,
-                onloaderror: () => {
-                    alert("Could not load this song (CORS issue). Try another one.");
-                }
-            });
+            // Method 1: Direct (most likely to fail due to CORS)
+            currentAudio = new Audio(url);
+            currentAudio.play()
+                .then(() => {
+                    document.getElementById('status').textContent = '✅ Playing (direct)';
+                })
+                .catch(() => {
+                    // Method 2: CORS Proxy fallback
+                    const proxyUrl = 'https://corsproxy.io/?' + encodeURIComponent(url);
+                    currentAudio = new Audio(proxyUrl);
+                    currentAudio.play()
+                        .then(() => document.getElementById('status').textContent = '✅ Playing via proxy')
+                        .catch(() => {
+                            // Method 3: Open in new tab as last resort
+                            document.getElementById('status').innerHTML = `⚠️ Could not stream.<br><a href="${url}" target="_blank">Click here to play in new tab</a>`;
+                        });
+                });
         }
     </script>
 </body>
