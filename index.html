@@ -1,116 +1,44 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta charset="UTF-8">
-<title>Pillowcase Music Player</title>
-<style>
-body { background: #111; color: white; font-family: Arial, sans-serif; text-align: center; padding: 40px; }
-button { padding: 10px 20px; margin: 5px; font-size: 16px; cursor: pointer; }
-audio { width: 80%; margin-top: 20px; }
-#trackInfo { min-height: 50px; }
-</style>
+    <meta charset="UTF-8">
+    <title>My Music Playlist</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/howler/2.2.4/howler.min.js"></script>
+    <style>
+        body { font-family: Arial, sans-serif; background: #111; color: #fff; padding: 20px; text-align: center; }
+        button { padding: 12px 20px; margin: 8px; font-size: 16px; cursor: pointer; }
+        .now-playing { margin: 20px; font-size: 18px; min-height: 28px; }
+    </style>
 </head>
 <body>
+    <h1>My Pillowcase Music Collection</h1>
+    <div id="nowPlaying" class="now-playing">Click a song to play</div>
 
-<h2 id="trackInfo">Loading...</h2>
-<audio id="player" controls></audio>
-<br><br>
+    <!-- Add your songs here from the spreadsheet -->
+    <button onclick="playSong('https://pillows.su/f/9281f17a3b740f3843fefdd75ec1d554', 'Lambo - Akachi Ruff')">▶ Lambo (Akachi) Ruff</button>
+    
+    <!-- Example of more buttons -->
+    <!-- <button onclick="playSong('OTHER_PILLOWS_LINK_HERE', 'Song Title')">▶ Song Title</button> -->
 
-<button onclick="prevTrack()">Previous</button>
-<button onclick="nextTrack()">Next</button>
-<button onclick="toggleShuffle()">Shuffle: OFF</button>
+    <script>
+        let currentSound = null;
 
-<script>
-let tracks = [];
-let currentIndex = 0;
-let shuffle = false;
-let player = document.getElementById("player");
+        function playSong(url, title) {
+            // Stop previous song
+            if (currentSound) currentSound.stop();
 
-fetch("tracks.txt")
-  .then(res => res.text())
-  .then(text => {
-    tracks = text.split("\n").filter(t => t.trim() !== "");
-    if (tracks.length) loadTrack(0);
-  });
+            document.getElementById('nowPlaying').textContent = `Now Playing: ${title}`;
 
-function getVariants(id) {
-    return [
-        `https://api.pillows.su/api/download/${id}`,   // Primary direct MP3
-        `https://pillows.su/api/file/${id}`,
-        `https://pillows.su/f/${id}`
-    ];
-}
-
-async function loadTrack(index) {
-    if (!tracks.length) return;
-    currentIndex = index;
-    let id = tracks[index].trim();
-
-    document.getElementById("trackInfo").innerText = `Loading ${index + 1} / ${tracks.length}...`;
-
-    for (let url of getVariants(id)) {
-        let success = await tryPlay(url);
-        if (success) {
-            document.getElementById("trackInfo").innerText = `Now Playing ${index + 1} / ${tracks.length}`;
-            preloadNext();
-            return;
+            currentSound = new Howl({
+                src: [url],
+                html5: true,           // Important for streaming large files
+                autoplay: true,
+                volume: 0.9,
+                onloaderror: () => {
+                    alert("Could not load this song (CORS issue). Try another one.");
+                }
+            });
         }
-    }
-
-    console.log("Failed all variants for:", id);
-    setTimeout(nextTrack, 800); // small delay so you can see which ones fail
-}
-
-function tryPlay(url) {
-    return new Promise(resolve => {
-        const timeout = setTimeout(() => resolve(false), 8000);
-
-        player.src = url;
-        player.load();
-
-        player.oncanplay = () => {
-            clearTimeout(timeout);
-            resolve(true);
-        };
-
-        player.onerror = () => {
-            clearTimeout(timeout);
-            console.warn("Failed:", url);
-            resolve(false);
-        };
-    });
-}
-
-function preloadNext() {
-    if (currentIndex + 1 >= tracks.length) return;
-    let nextId = tracks[currentIndex + 1].trim();
-    let link = document.createElement("link");
-    link.rel = "preload";
-    link.as = "audio";
-    link.href = `https://api.pillows.su/api/download/${nextId}`;
-    document.head.appendChild(link);
-}
-
-function nextTrack() {
-    if (shuffle) {
-        currentIndex = Math.floor(Math.random() * tracks.length);
-    } else {
-        currentIndex = (currentIndex + 1) % tracks.length;
-    }
-    loadTrack(currentIndex);
-}
-
-function prevTrack() {
-    currentIndex = (currentIndex - 1 + tracks.length) % tracks.length;
-    loadTrack(currentIndex);
-}
-
-function toggleShuffle() {
-    shuffle = !shuffle;
-    document.querySelector("button[onclick='toggleShuffle()']").innerText = "Shuffle: " + (shuffle ? "ON" : "OFF");
-}
-
-player.addEventListener("ended", nextTrack);
-</script>
+    </script>
 </body>
 </html>
