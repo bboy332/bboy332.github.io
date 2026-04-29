@@ -16,15 +16,15 @@
         .count { color:#aaa; font-size:15px; }
 
         .player {
-            background:#1a1a1a; border-radius:16px; padding:20px;
+            background:#1a1a1a; border-radius:16px; padding:25px;
             max-width:720px; margin:0 auto 30px; box-shadow:0 10px 30px rgba(0,0,0,0.5);
         }
-        .now-playing { font-size:18px; font-weight:600; margin-bottom:12px; }
-        
+        .now-playing { font-size:18px; font-weight:600; margin-bottom:12px; min-height:26px; }
+
         .progress-container {
             height:6px; background:#333; border-radius:999px; margin:15px 0; cursor:pointer; position:relative;
         }
-        .progress { height:100%; background:#1db954; border-radius:999px; width:0%; }
+        .progress { height:100%; background:#1db954; border-radius:999px; width:0%; transition: width 0.1s linear; }
 
         .time {
             display:flex; justify-content:space-between; font-size:13px; color:#aaa; margin-top:4px;
@@ -33,22 +33,38 @@
         .volume-container {
             display:flex; align-items:center; gap:10px; margin-top:15px;
         }
-        .volume-container input {
-            width:150px;
-        }
+        .volume-container input { width:160px; accent-color: #1db954; }
 
         .controls {
-            display:flex; justify-content:center; gap:25px; margin-top:20px;
+            display:flex; justify-content:center; align-items:center; gap:30px; margin-top:25px;
         }
-        button { background:none; border:none; color:white; font-size:28px; cursor:pointer; }
-        .play-pause { font-size:42px; background:#1db954; color:#000; width:64px; height:64px; border-radius:50%; display:flex; align-items:center; justify-content:center; }
+        button {
+            background:none; border:none; color:white; font-size:28px; cursor:pointer;
+            transition: all 0.2s;
+        }
+        button:hover { transform: scale(1.1); }
+        button:active { transform: scale(0.95); }
+
+        .play-pause {
+            font-size:48px; 
+            background:#1db954; 
+            color:#000; 
+            width:72px; 
+            height:72px; 
+            border-radius:50%; 
+            display:flex; 
+            align-items:center; 
+            justify-content:center;
+            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
+        }
 
         .song-btn {
             width:100%; max-width:720px; margin:6px auto; display:block;
             padding:16px 20px; background:#1a1a1a; border:none; border-radius:12px;
             color:white; text-align:left; cursor:pointer; font-size:16px;
+            transition: all 0.2s;
         }
-        .song-btn:hover { background:#252525; }
+        .song-btn:hover { background:#252525; transform: translateX(4px); }
         .song-btn.playing { background:#1db954; color:#000; }
     </style>
 </head>
@@ -71,7 +87,7 @@
 
         <div class="volume-container">
             <span>🔊</span>
-            <input type="range" id="volume" min="0" max="1" step="0.01" value="1">
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8">
         </div>
 
         <div class="controls">
@@ -93,7 +109,6 @@
         let isShuffle = true;
         let audio = document.getElementById('audio');
 
-        // Load tracks.txt
         fetch('tracks.txt')
             .then(res => res.text())
             .then(text => {
@@ -132,7 +147,7 @@
             playSong(currentIndex);
         }
 
-        // Progress & Seek
+        // Progress
         const progressContainer = document.getElementById('progress-container');
         const progressBar = document.getElementById('progress');
 
@@ -146,7 +161,6 @@
             if (audio.duration) {
                 const percent = (audio.currentTime / audio.duration) * 100;
                 progressBar.style.width = percent + '%';
-                
                 document.getElementById('current-time').textContent = formatTime(audio.currentTime);
                 document.getElementById('duration').textContent = formatTime(audio.duration);
             }
@@ -165,13 +179,14 @@
         });
 
         // Controls
-        document.getElementById('play-pause-btn').onclick = () => {
+        const playPauseBtn = document.getElementById('play-pause-btn');
+        playPauseBtn.onclick = () => {
             if (audio.paused) {
                 audio.play();
-                document.getElementById('play-pause-btn').innerHTML = '❚❚';
+                playPauseBtn.innerHTML = '❚❚';
             } else {
                 audio.pause();
-                document.getElementById('play-pause-btn').innerHTML = '▶';
+                playPauseBtn.innerHTML = '▶';
             }
         };
 
