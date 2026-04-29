@@ -14,10 +14,10 @@
             min-height: 100vh;
         }
         .header { text-align: center; margin-bottom: 20px; }
-        .uzi-banner {
-            width: 100%; max-width: 720px; height: 180px; object-fit: cover;
-            border-radius: 16px; margin: 0 auto 15px; display: block;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        #equalizer {
+            width: 100%; max-width: 720px; height: 120px;
+            background: #111; border-radius: 16px; margin: 0 auto 15px;
+            display: block; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
         }
         h1 { margin: 10px 0 4px; }
         .subtitle { color: #aaa; }
@@ -26,9 +26,6 @@
             max-width: 720px; margin: 0 auto 30px; background: #1a1a1a;
             border-radius: 20px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.6);
             position: relative;
-        }
-        .now-playing {
-            text-align: center;
         }
         .track-title {
             font-size: 1.4em; font-weight: 600; margin: 10px 0 8px; display: flex;
@@ -80,22 +77,20 @@
 </head>
 <body>
     <div class="header">
-        <img id="uzi-banner" class="uzi-banner" src="https://picsum.photos/id/1015/800/200" alt="Lil Uzi Vert">
+        <canvas id="equalizer" width="720" height="120"></canvas>
         <h1>My Pillowcase Playlist</h1>
         <div class="subtitle">1297 songs • Random start</div>
     </div>
 
     <div class="player">
-        <div class="now-playing">
-            <div class="track-title" id="current-title">
-                Loading...
-                <span id="fav-player-heart" class="fav-player-btn" onclick="toggleCurrentFavorite()">♡</span>
-            </div>
-            <div class="progress-container" id="progress-container"><div class="progress" id="progress"></div></div>
-            <div class="time">
-                <span id="current-time">0:00</span>
-                <span id="duration">0:00</span>
-            </div>
+        <div class="track-title" id="current-title">
+            Loading...
+            <span id="fav-player-heart" class="fav-player-btn" onclick="toggleCurrentFavorite()">♡</span>
+        </div>
+        <div class="progress-container" id="progress-container"><div class="progress" id="progress"></div></div>
+        <div class="time">
+            <span id="current-time">0:00</span>
+            <span id="duration">0:00</span>
         </div>
 
         <div class="controls">
@@ -128,7 +123,11 @@
         let filteredSongs = [];
         let favorites = JSON.parse(localStorage.getItem('pillowFavorites') || '[]');
 
-        const uziImages = ["https://picsum.photos/id/1015/800/200","https://picsum.photos/id/1027/800/200","https://picsum.photos/id/106/800/200","https://picsum.photos/id/201/800/200","https://picsum.photos/id/133/800/200"];
+        // Web Audio API for equalizer
+        let audioContext, analyser, dataArray, source;
+        const canvas = document.getElementById('equalizer');
+        const ctx = canvas.getContext('2d');
+        let barCount = 24;
 
         fetch('tracks.txt')
             .then(res => res.text())
@@ -138,34 +137,53 @@
                 currentIndex = Math.floor(Math.random() * songs.length);
                 renderAll();
                 playCurrent();
-                setInterval(() => {
-                    document.getElementById('uzi-banner').src = uziImages[Math.floor(Math.random()*uziImages.length)];
-                }, 8000);
             });
+
+        function initAudioContext() {
+            if (audioContext) return;
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            analyser.fftSize = 128;
+            dataArray = new Uint8Array(analyser.frequencyBinCount);
+            source = audioContext.createMediaElementSource(audio);
+            source.connect(analyser);
+            analyser.connect(audioContext.destination);
+        }
+
+        function drawEqualizer() {
+            if (!analyser) return;
+            analyser.getByteFrequencyData(dataArray);
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            const barWidth = canvas.width / barCount;
+            for (let i = 0; i < barCount; i++) {
+                const height = (dataArray[i] / 255) * canvas.height * 0.9;
+                const x = i * barWidth;
+                const gradient = ctx.createLinearGradient(x, canvas.height, x, canvas.height - height);
+                gradient.addColorStop(0, '#00ff9d');
+                gradient.addColorStop(1, '#00cc77');
+                ctx.fillStyle = gradient;
+                ctx.fillRect(x + 2, canvas.height - height, barWidth - 4, height);
+            }
+            requestAnimationFrame(drawEqualizer);
+        }
 
         function saveFavorites() {
             localStorage.setItem('pillowFavorites', JSON.stringify(favorites));
             document.getElementById('fav-count').textContent = favorites.length;
         }
 
-        function isFavorited(idx) {
-            return favorites.includes(idx);
-        }
+        function isFavorited(idx) { return favorites.includes(idx); }
 
         function toggleFavorite(idx) {
-            if (isFavorited(idx)) {
-                favorites = favorites.filter(i => i !== idx);
-            } else {
-                favorites.push(idx);
-            }
+            if (isFavorited(idx)) favorites = favorites.filter(i => i !== idx);
+            else favorites.push(idx);
             saveFavorites();
             renderAll();
             updatePlayerHeart();
         }
 
-        function toggleCurrentFavorite() {
-            toggleFavorite(currentIndex);
-        }
+        function toggleCurrentFavorite() { toggleFavorite(currentIndex); }
 
         function updatePlayerHeart() {
             const heart = document.getElementById('fav-player-heart');
@@ -191,8 +209,7 @@
                 const btn = document.createElement('button');
                 btn.className = 'song-btn';
                 if (idx === currentIndex) btn.classList.add('playing');
-                btn.innerHTML = `▶ Track ${String(idx+1).padStart(4,'0')} 
-                    <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${idx});">❤️</span>`;
+                btn.innerHTML = `▶ Track ${String(idx+1).padStart(4,'0')} <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${idx});">❤️</span>`;
                 btn.onclick = () => { currentIndex = idx; playCurrent(); };
                 container.appendChild(btn);
             });
@@ -207,8 +224,7 @@
                 btn.className = 'song-btn';
                 if (globalIndex === currentIndex) btn.classList.add('playing');
                 const isFav = isFavorited(globalIndex);
-                btn.innerHTML = `▶ Track ${String(globalIndex+1).padStart(4,'0')} 
-                    <span class="heart ${isFav ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIndex});">${isFav ? '❤️' : '♡'}</span>`;
+                btn.innerHTML = `▶ Track ${String(globalIndex+1).padStart(4,'0')} <span class="heart ${isFav ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIndex});">${isFav ? '❤️' : '♡'}</span>`;
                 btn.onclick = () => { currentIndex = globalIndex; playCurrent(); };
                 container.appendChild(btn);
             });
@@ -227,12 +243,13 @@
         }
 
         function playCurrent() {
+            initAudioContext();
             audio.src = songs[currentIndex];
             audio.play().catch(() => {});
             document.getElementById('play-pause-btn').innerHTML = '❚❚';
-            document.getElementById('current-title').innerHTML = `Track ${String(currentIndex+1).padStart(4,'0')} 
-                <span id="fav-player-heart" class="fav-player-btn" onclick="toggleCurrentFavorite()">♡</span>`;
+            document.getElementById('current-title').innerHTML = `Track ${String(currentIndex+1).padStart(4,'0')} <span id="fav-player-heart" class="fav-player-btn" onclick="toggleCurrentFavorite()">♡</span>`;
             renderAll();
+            drawEqualizer();
         }
 
         // Controls
