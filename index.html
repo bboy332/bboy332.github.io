@@ -69,7 +69,6 @@
         let isShuffle = true;
         let audio = document.getElementById('audio');
 
-        // Load from your file named "tracks" or "tracks.txt"
         fetch('tracks.txt')
             .then(res => {
                 if (!res.ok) return fetch('tracks'); // try without .txt
