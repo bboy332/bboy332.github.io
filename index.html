@@ -22,17 +22,13 @@
         .now-playing { font-size:18px; font-weight:600; margin-bottom:12px; min-height:26px; }
 
         .progress-container {
-            height:6px; background:#333; border-radius:999px; margin:15px 0; cursor:pointer; position:relative;
+            height:6px; background:#333; border-radius:999px; margin:15px 0; cursor:pointer;
         }
-        .progress { height:100%; background:#1db954; border-radius:999px; width:0%; transition: width 0.1s linear; }
+        .progress { height:100%; background:#1db954; border-radius:999px; width:0%; }
 
-        .time {
-            display:flex; justify-content:space-between; font-size:13px; color:#aaa; margin-top:4px;
-        }
+        .time { display:flex; justify-content:space-between; font-size:13px; color:#aaa; margin-top:4px; }
 
-        .volume-container {
-            display:flex; align-items:center; gap:10px; margin-top:15px;
-        }
+        .volume-container { display:flex; align-items:center; gap:10px; margin-top:15px; }
         .volume-container input { width:160px; accent-color: #1db954; }
 
         .controls {
@@ -40,9 +36,9 @@
         }
         button {
             background:none; border:none; color:white; font-size:28px; cursor:pointer;
-            transition: all 0.2s;
+            transition: all 0.2s; padding:8px 12px; border-radius:8px;
         }
-        button:hover { transform: scale(1.1); }
+        button:hover { transform: scale(1.1); background:rgba(255,255,255,0.1); }
         button:active { transform: scale(0.95); }
 
         .play-pause {
@@ -55,7 +51,11 @@
             display:flex; 
             align-items:center; 
             justify-content:center;
-            box-shadow: 0 4px 15px rgba(29, 185, 84, 0.4);
+        }
+
+        #shuffle-btn.active {
+            color: #1db954;
+            background: rgba(29, 185, 84, 0.2);
         }
 
         .song-btn {
@@ -91,7 +91,7 @@
         </div>
 
         <div class="controls">
-            <button id="shuffle-btn">🔀</button>
+            <button id="shuffle-btn">🔀 Shuffle</button>
             <button id="prev-btn">⏮</button>
             <button class="play-pause" id="play-pause-btn">▶</button>
             <button id="next-btn">⏭</button>
@@ -125,6 +125,7 @@
             if (songs.length === 0) return;
             currentIndex = Math.floor(Math.random() * songs.length);
             playSong(currentIndex);
+            updateShuffleButton();
         }
 
         function playSong(index) {
@@ -147,7 +148,12 @@
             playSong(currentIndex);
         }
 
-        // Progress
+        function updateShuffleButton() {
+            const btn = document.getElementById('shuffle-btn');
+            btn.classList.toggle('active', isShuffle);
+        }
+
+        // Progress, Volume, etc. (same as before)
         const progressContainer = document.getElementById('progress-container');
         const progressBar = document.getElementById('progress');
 
@@ -173,20 +179,18 @@
             return `${min}:${sec < 10 ? '0' : ''}${sec}`;
         }
 
-        // Volume
         document.getElementById('volume').addEventListener('input', (e) => {
             audio.volume = parseFloat(e.target.value);
         });
 
         // Controls
-        const playPauseBtn = document.getElementById('play-pause-btn');
-        playPauseBtn.onclick = () => {
+        document.getElementById('play-pause-btn').onclick = () => {
             if (audio.paused) {
                 audio.play();
-                playPauseBtn.innerHTML = '❚❚';
+                document.getElementById('play-pause-btn').innerHTML = '❚❚';
             } else {
                 audio.pause();
-                playPauseBtn.innerHTML = '▶';
+                document.getElementById('play-pause-btn').innerHTML = '▶';
             }
         };
 
@@ -195,7 +199,11 @@
             currentIndex = (currentIndex - 1 + songs.length) % songs.length;
             playSong(currentIndex);
         };
-        document.getElementById('shuffle-btn').onclick = () => isShuffle = !isShuffle;
+
+        document.getElementById('shuffle-btn').onclick = () => {
+            isShuffle = !isShuffle;
+            updateShuffleButton();
+        };
 
         audio.onended = nextSong;
 
