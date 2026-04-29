@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <title>My Pillowcase Playlist (1297 Songs)</title>
     <style>
+        * { box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: #0a0a0a;
@@ -12,36 +13,29 @@
             padding: 20px;
             min-height: 100vh;
         }
-        h1 {
-            text-align: center;
-            margin-bottom: 5px;
-        }
-        .subtitle {
-            text-align: center;
-            color: #aaa;
-            margin-bottom: 20px;
-        }
+        h1 { text-align: center; margin-bottom: 4px; }
+        .subtitle { text-align: center; color: #aaa; margin-bottom: 25px; }
+
         .player {
-            max-width: 700px;
+            max-width: 720px;
             margin: 0 auto 30px;
             background: #1a1a1a;
-            border-radius: 16px;
-            padding: 20px;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.6);
         }
         .now-playing {
             text-align: center;
-            margin-bottom: 15px;
         }
         .track-title {
-            font-size: 1.3em;
+            font-size: 1.35em;
             font-weight: 600;
-            margin: 8px 0;
+            margin: 10px 0 15px;
         }
         .progress-container {
             height: 6px;
             background: #333;
-            border-radius: 3px;
+            border-radius: 999px;
             margin: 15px 0;
             cursor: pointer;
             position: relative;
@@ -50,85 +44,74 @@
             height: 100%;
             background: #00ff9d;
             width: 0%;
-            border-radius: 3px;
+            border-radius: 999px;
         }
         .time {
             display: flex;
             justify-content: space-between;
-            font-size: 0.85em;
-            color: #aaa;
+            font-size: 0.9em;
+            color: #888;
+            margin-top: 4px;
         }
         .controls {
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 15px;
-            margin: 15px 0;
+            gap: 20px;
+            margin: 20px 0;
         }
         button {
-            background: transparent;
+            background: none;
             border: none;
             color: #fff;
-            font-size: 1.8em;
+            font-size: 2em;
             cursor: pointer;
-            padding: 8px;
-            border-radius: 50%;
+            padding: 10px;
             transition: all 0.2s;
         }
-        button:hover { color: #00ff9d; transform: scale(1.1); }
+        button:hover { color: #00ff9d; transform: scale(1.15); }
         .shuffle-btn {
-            font-size: 1.4em;
-            padding: 10px 16px;
+            font-size: 1.5em;
+            padding: 10px 20px;
             border-radius: 30px;
             background: #222;
         }
-        .shuffle-btn.active {
-            background: #00ff9d;
-            color: #000;
-        }
-        .volume {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            margin-top: 10px;
-        }
-        input[type="range"] {
-            accent-color: #00ff9d;
-        }
+        .shuffle-btn.active { background: #00ff9d; color: #000; }
 
         .search {
             width: 100%;
-            max-width: 700px;
-            margin: 0 auto 20px;
-            padding: 14px 20px;
+            max-width: 720px;
+            margin: 0 auto 25px;
+            padding: 16px 20px;
             font-size: 17px;
-            background: #1a1a1a;
+            background: #1f1f1f;
             border: none;
             border-radius: 12px;
             color: #fff;
+            display: block;
         }
 
         .playlist {
-            max-width: 700px;
+            max-width: 720px;
             margin: 0 auto;
         }
         .song-btn {
             display: block;
             width: 100%;
-            padding: 14px 18px;
-            margin: 4px 0;
+            padding: 16px 20px;
+            margin: 6px 0;
             background: #1f1f1f;
             border: none;
-            border-radius: 10px;
+            border-radius: 12px;
             text-align: left;
             color: #ddd;
-            font-size: 15px;
+            font-size: 15.5px;
             cursor: pointer;
             transition: all 0.2s;
         }
         .song-btn:hover {
             background: #2a2a2a;
-            transform: translateX(4px);
+            transform: translateX(6px);
         }
         .song-btn.playing {
             background: #00ff9d;
@@ -141,9 +124,9 @@
     <h1>My Pillowcase Playlist</h1>
     <div class="subtitle">1297 songs • Random start</div>
 
-    <div class="player" id="player">
+    <div class="player">
         <div class="now-playing">
-            <div class="track-title" id="current-title">Track 0001</div>
+            <div class="track-title" id="current-title">Loading...</div>
             <div class="progress-container" id="progress-container">
                 <div class="progress" id="progress"></div>
             </div>
@@ -160,9 +143,8 @@
             <button id="next-btn">⫻</button>
         </div>
 
-        <div class="volume">
-            <span>🔊</span>
-            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8">
+        <div style="text-align:center; margin-top:10px;">
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.8" style="width:220px;">
         </div>
     </div>
 
@@ -173,44 +155,42 @@
     <script>
         let songs = [];
         let currentIndex = 0;
-        let isShuffle = true;
         let audio = new Audio();
         let filteredSongs = [];
 
-        // Load tracks from file
-        fetch('tracks_clean.txt')
+        fetch('tracks.txt')
             .then(res => res.text())
             .then(text => {
-                songs = text.trim().split('\n').filter(url => url.trim());
+                songs = text.trim().split('\n').filter(url => url.trim().startsWith('http'));
                 filteredSongs = [...songs];
                 currentIndex = Math.floor(Math.random() * songs.length);
                 renderPlaylist();
                 playCurrent();
             });
 
-        function formatTitle(url) {
-            return `Track ${String(songs.indexOf(url) + 1).padStart(4, '0')}`;
+        function formatTitle(index) {
+            return `Track ${String(index + 1).padStart(4, '0')}`;
         }
 
         function playCurrent() {
-            if (!songs.length) return;
             audio.src = songs[currentIndex];
-            audio.play();
+            audio.play().catch(() => {});
             document.getElementById('play-pause-btn').innerHTML = '❚❚';
-            document.getElementById('current-title').textContent = formatTitle(songs[currentIndex]);
-            renderPlaylist(); // highlight playing
+            document.getElementById('current-title').textContent = formatTitle(currentIndex);
+            renderPlaylist();
         }
 
         function renderPlaylist() {
             const container = document.getElementById('playlist');
             container.innerHTML = '';
             filteredSongs.forEach((url, i) => {
+                const globalIndex = songs.indexOf(url);
                 const btn = document.createElement('button');
                 btn.className = 'song-btn';
-                if (songs.indexOf(url) === currentIndex) btn.classList.add('playing');
-                btn.textContent = `▶ ${formatTitle(url)}`;
+                if (globalIndex === currentIndex) btn.classList.add('playing');
+                btn.textContent = `▶ ${formatTitle(globalIndex)}`;
                 btn.onclick = () => {
-                    currentIndex = songs.indexOf(url);
+                    currentIndex = globalIndex;
                     playCurrent();
                 };
                 container.appendChild(btn);
@@ -219,7 +199,7 @@
 
         function filterSongs() {
             const term = document.getElementById('search').value.toLowerCase();
-            filteredSongs = songs.filter(url => formatTitle(url).toLowerCase().includes(term));
+            filteredSongs = songs.filter((_, i) => formatTitle(i).toLowerCase().includes(term));
             renderPlaylist();
         }
 
@@ -245,13 +225,11 @@
         };
 
         document.getElementById('shuffle-btn').onclick = () => {
-            isShuffle = !isShuffle;
-            document.getElementById('shuffle-btn').classList.toggle('active', isShuffle);
+            const btn = document.getElementById('shuffle-btn');
+            btn.classList.toggle('active');
         };
 
-        document.getElementById('volume').oninput = (e) => {
-            audio.volume = parseFloat(e.target.value);
-        };
+        document.getElementById('volume').oninput = (e) => audio.volume = e.target.value;
 
         // Progress
         const progressContainer = document.getElementById('progress-container');
@@ -259,8 +237,7 @@
 
         audio.ontimeupdate = () => {
             if (audio.duration) {
-                const percent = (audio.currentTime / audio.duration) * 100;
-                progressBar.style.width = percent + '%';
+                progressBar.style.width = (audio.currentTime / audio.duration * 100) + '%';
                 document.getElementById('current-time').textContent = formatTime(audio.currentTime);
                 document.getElementById('duration').textContent = formatTime(audio.duration);
             }
@@ -268,27 +245,16 @@
 
         progressContainer.onclick = (e) => {
             const rect = progressContainer.getBoundingClientRect();
-            const percent = (e.clientX - rect.left) / rect.width;
-            audio.currentTime = percent * audio.duration;
+            audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
         };
 
-        function formatTime(seconds) {
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60);
-            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        function formatTime(s) {
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec < 10 ? '0' : ''}${sec}`;
         }
 
-        audio.onended = () => {
-            document.getElementById('next-btn').click();
-        };
-
-        // Keyboard support
-        document.addEventListener('keydown', e => {
-            if (e.code === 'Space') {
-                e.preventDefault();
-                document.getElementById('play-pause-btn').click();
-            }
-        });
+        audio.onended = () => document.getElementById('next-btn').click();
     </script>
 </body>
 </html>
