@@ -13,32 +13,27 @@
             position: relative;
             overflow: hidden;
         }
-        /* Video Background */
         #video-bg {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            z-index: -2;
             object-fit: cover;
-            filter: brightness(0.65) contrast(1.1) saturate(1.3);
+            z-index: -2;
+            filter: brightness(0.55) contrast(1.1) saturate(1.3);
         }
         .overlay {
             position: fixed;
             top: 0; left: 0;
             width: 100%; height: 100%;
-            background: rgba(10, 10, 15, 0.78);
+            background: rgba(5, 5, 15, 0.78);
             z-index: -1;
         }
 
-        .header, .player, .favorites-header, .search, .playlist {
-            position: relative;
-            z-index: 2;
-        }
+        .header, .player, .favorites-header, .search, .playlist { position: relative; z-index: 2; }
 
         h1 { text-align: center; margin: 10px 0 4px; text-shadow: 0 2px 15px rgba(0,0,0,0.9); }
         .subtitle { text-align: center; color: #ccc; margin-bottom: 25px; }
 
-        /* Player & UI styles (same as before) */
         .player {
             max-width: 720px; margin: 0 auto 30px; background: rgba(26,26,26,0.95);
             border-radius: 20px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.7);
@@ -68,8 +63,7 @@
         .favorites-header, .search, .playlist { max-width: 720px; margin: 0 auto; }
         .favorites-header {
             padding: 14px 20px; background: rgba(31,31,31,0.95); border-radius: 12px;
-            cursor: pointer; display: flex; align-items: center; justify-content: space-between;
-            font-weight: 600; margin-bottom: 10px;
+            cursor: pointer; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px;
         }
         .search {
             padding: 16px 20px; font-size: 17px; background: #1f1f1f;
@@ -88,10 +82,9 @@
     </style>
 </head>
 <body>
-    <!-- Uzi Video Background -->
-    <iframe id="video-bg" 
-            src="https://www.youtube.com/embed/d3rpxWI00w4?autoplay=1&loop=1&playlist=d3rpxWI00w4&controls=0&mute=1&modestbranding=1&showinfo=0&rel=0"
-            frameborder="0" allow="autoplay"></iframe>
+    <video id="video-bg" autoplay loop muted playsinline>
+        <source src="uzi-bg.mp4" type="video/mp4">
+    </video>
     <div class="overlay"></div>
 
     <div class="header">
@@ -133,12 +126,12 @@
     <div class="playlist" id="playlist"></div>
 
     <script>
-        // (All your previous working JavaScript - favorites, controls, etc.)
         let songs = [];
         let currentIndex = 0;
         let audio = new Audio();
         let filteredSongs = [];
         let favorites = JSON.parse(localStorage.getItem('pillowFavorites') || '[]');
+        let isShuffle = false;
 
         fetch('tracks.txt')
             .then(res => res.text())
@@ -179,10 +172,46 @@
             document.getElementById('fav-arrow').textContent = list.style.display === 'none' ? '▼' : '▲';
         }
 
-        function renderFavorites() { /* same as before */ }
-        function renderPlaylist() { /* same as before */ }
-        function renderAll() { renderFavorites(); renderPlaylist(); updatePlayerHeart(); }
-        function filterSongs() { /* same as before */ }
+        function renderFavorites() {
+            const container = document.getElementById('favorites-list');
+            container.innerHTML = favorites.length === 0 
+                ? '<div style="text-align:center;color:#666;padding:30px;">No favorites yet ❤️</div>' : '';
+            favorites.forEach(idx => {
+                const btn = document.createElement('button');
+                btn.className = 'song-btn';
+                if (idx === currentIndex) btn.classList.add('playing');
+                btn.innerHTML = `▶ Track ${String(idx+1).padStart(4,'0')} <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${idx});">❤️</span>`;
+                btn.onclick = () => { currentIndex = idx; playCurrent(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderPlaylist() {
+            const container = document.getElementById('playlist');
+            container.innerHTML = '';
+            filteredSongs.forEach((url, i) => {
+                const idx = songs.indexOf(url);
+                const btn = document.createElement('button');
+                btn.className = 'song-btn';
+                if (idx === currentIndex) btn.classList.add('playing');
+                const isFav = isFavorited(idx);
+                btn.innerHTML = `▶ Track ${String(idx+1).padStart(4,'0')} <span class="heart ${isFav ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${idx});">${isFav ? '❤️' : '♡'}</span>`;
+                btn.onclick = () => { currentIndex = idx; playCurrent(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function renderAll() {
+            renderFavorites();
+            renderPlaylist();
+            updatePlayerHeart();
+        }
+
+        function filterSongs() {
+            const term = document.getElementById('search').value.toLowerCase();
+            filteredSongs = songs.filter((_, i) => `track ${String(i+1).padStart(4,'0')}`.includes(term));
+            renderPlaylist();
+        }
 
         function playCurrent() {
             audio.src = songs[currentIndex];
@@ -193,23 +222,29 @@
             renderAll();
         }
 
-        // Controls, progress, etc. (same as last stable version)
+        // Improved Shuffle + Next Logic
         document.getElementById('play-pause-btn').onclick = () => {
             if (audio.paused) { audio.play(); document.getElementById('play-pause-btn').innerHTML = '❚❚'; }
             else { audio.pause(); document.getElementById('play-pause-btn').innerHTML = '▶'; }
         };
 
-        document.getElementById('next-btn').onclick = () => { currentIndex = (currentIndex + 1) % songs.length; playCurrent(); };
-        document.getElementById('prev-btn').onclick = () => { currentIndex = (currentIndex - 1 + songs.length) % songs.length; playCurrent(); };
+        document.getElementById('next-btn').onclick = () => {
+            if (isShuffle) {
+                currentIndex = Math.floor(Math.random() * songs.length);
+            } else {
+                currentIndex = (currentIndex + 1) % songs.length;
+            }
+            playCurrent();
+        };
+
+        document.getElementById('prev-btn').onclick = () => {
+            currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+            playCurrent();
+        };
 
         document.getElementById('shuffle-btn').onclick = () => {
-            const btn = document.getElementById('shuffle-btn');
-            btn.classList.toggle('active');
-            if (btn.classList.contains('active')) {
-                songs = songs.sort(() => Math.random() - 0.5);
-                currentIndex = 0;
-                playCurrent();
-            }
+            isShuffle = !isShuffle;
+            document.getElementById('shuffle-btn').classList.toggle('active', isShuffle);
         };
 
         document.getElementById('volume').oninput = (e) => audio.volume = parseFloat(e.target.value);
