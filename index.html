@@ -60,11 +60,11 @@
 
     <div class="header">
         <h1>My Pillowcase Playlist</h1>
-        <div class="subtitle">Lil Uzi Vert Tracker • Live from Google Sheets</div>
+        <div class="subtitle">Lil Uzi Vert Tracker • Live Sync</div>
     </div>
 
     <div class="player">
-        <div class="track-title" id="current-title">Loading...</div>
+        <div class="track-title" id="current-title">Loading tracks from Google Sheets...</div>
         <div class="progress-container" id="progress-container"><div class="progress" id="progress"></div></div>
         <div class="time">
             <span id="current-time">0:00</span>
@@ -101,33 +101,50 @@
         let favorites = JSON.parse(localStorage.getItem('pillowFavorites') || '[]');
         let isShuffle = false;
 
-        // YOUR LIVE SPREADSHEET (auto-syncs every time you open the page)
         const csvUrl = "https://docs.google.com/spreadsheets/d/1zqqdIds1iwnx4lh29iF1IlraeuqfGhxH9qLNlWOnryo/pub?output=csv";
 
         fetch(csvUrl)
-            .then(res => res.text())
+            .then(res => {
+                if (!res.ok) throw new Error("Failed to fetch CSV");
+                return res.text();
+            })
             .then(text => {
                 const rows = text.trim().split('\n');
                 songs = [];
 
                 rows.slice(1).forEach(row => {
                     const cols = row.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-                    const link = cols[cols.length - 1];
-                    if (link && link.startsWith('http')) {
+                    let rawLink = cols[cols.length - 1];
+
+                    if (rawLink && rawLink.includes('pillows.su/f/')) {
+                        const hash = rawLink.split('/f/')[1].split('?')[0]; // clean any extra params
+                        rawLink = `https://api.pillows.su/api/get/${hash}`;
+                    }
+
+                    if (rawLink && rawLink.startsWith('http')) {
                         songs.push({
                             name: cols[1] || `Track ${songs.length + 1}`,
                             length: cols[3] || '',
                             era: cols[0] || '',
                             notes: cols[2] || '',
-                            link: link
+                            link: rawLink
                         });
                     }
                 });
+
+                if (songs.length === 0) {
+                    document.getElementById('current-title').innerHTML = "No tracks found — check spreadsheet publish settings";
+                    return;
+                }
 
                 filteredSongs = [...songs];
                 currentIndex = Math.floor(Math.random() * songs.length);
                 renderAll();
                 playCurrent();
+            })
+            .catch(err => {
+                console.error(err);
+                document.getElementById('current-title').innerHTML = "Error loading spreadsheet — make sure it's published as CSV";
             });
 
         function playCurrent() {
@@ -139,6 +156,7 @@
             renderAll();
         }
 
+        // (The rest of the script is unchanged from the previous version — favorites, shuffle, etc.)
         function saveFavorites() {
             localStorage.setItem('pillowFavorites', JSON.stringify(favorites));
             document.getElementById('fav-count').textContent = favorites.length;
@@ -209,7 +227,6 @@
             renderPlaylist();
         }
 
-        // Controls
         document.getElementById('play-pause-btn').onclick = () => {
             if (audio.paused) { audio.play(); document.getElementById('play-pause-btn').innerHTML = '❚❚'; }
             else { audio.pause(); document.getElementById('play-pause-btn').innerHTML = '▶'; }
