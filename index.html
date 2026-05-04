@@ -2,264 +2,228 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>My Pillowcase Playlist</title>
+    <title>My Pillowcase Playlist (Lil Uzi Vert)</title>
     <style>
-        * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 20px; min-height: 100vh; position: relative; overflow: hidden; }
-        #video-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover; z-index: -2; filter: brightness(0.55) contrast(1.1) saturate(1.3); }
-        .overlay { position: fixed; inset: 0; background: rgba(5,5,15,0.78); z-index: -1; }
-        .header, .player, .favorites-header, .search, .playlist { position: relative; z-index: 2; }
-        h1 { text-align: center; margin: 10px 0 4px; }
-        .subtitle { text-align: center; color: #aaa; margin-bottom: 20px; }
-        .player { max-width: 720px; margin: 0 auto 30px; background: rgba(26,26,26,0.95); border-radius: 20px; padding: 25px; box-shadow: 0 15px 35px rgba(0,0,0,0.7); }
-        .track-title { font-size: 1.4em; font-weight: 600; margin: 10px 0 8px; display: flex; align-items: center; justify-content: center; gap: 12px; }
-        .fav-player-btn { font-size: 1.7em; cursor: pointer; }
-        .fav-player-btn.liked { color: #ff2d55; }
-        .progress-container { height: 6px; background: #333; border-radius: 999px; margin: 15px 0; cursor: pointer; }
-        .progress { height: 100%; background: #00ff9d; width: 0%; border-radius: 999px; }
-        .time { display: flex; justify-content: space-between; font-size: 0.9em; color: #aaa; }
-        .controls { display: flex; align-items: center; justify-content: center; gap: 20px; margin: 20px 0; }
-        button { background: none; border: none; color: #fff; font-size: 2.1em; cursor: pointer; padding: 8px; transition: all 0.2s; }
-        button:hover { color: #00ff9d; transform: scale(1.15); }
-        .shuffle-btn { font-size: 1.55em; padding: 10px 22px; border-radius: 30px; background: #222; }
-        .shuffle-btn.active { background: #00ff9d; color: #000; }
-        .favorites-header, .search, .playlist { max-width: 720px; margin: 0 auto; }
-        .favorites-header { padding: 14px 20px; background: rgba(31,31,31,0.95); border-radius: 12px; cursor: pointer; display: flex; justify-content: space-between; font-weight: 600; margin-bottom: 10px; }
-        .search { padding: 16px 20px; font-size: 17px; background: #1f1f1f; border: none; border-radius: 12px; color: #fff; margin-bottom: 20px; }
-        .song-btn {
-            display: flex; align-items: center; justify-content: space-between;
-            width: 100%; padding: 16px 20px; margin: 6px 0;
-            background: #1f1f1f; border: none; border-radius: 12px;
-            color: #ddd; font-size: 15.5px; cursor: pointer; transition: all 0.2s; flex-direction: column; align-items: flex-start;
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #0a0a0a; 
+            color: #fff; 
+            margin: 0; 
+            padding: 20px; 
+            text-align: center;
         }
-        .song-btn:hover { background: #2a2a2a; }
-        .song-btn.playing { background: #00ff9d; color: #000; }
-        .heart { font-size: 1.45em; align-self: flex-end; margin-top: 4px; }
-        .heart.liked { color: #ff2d55; }
-        .description { font-size: 0.85em; color: #aaa; margin-top: 8px; line-height: 1.3; display: none; width: 100%; }
-        .song-btn.expanded .description { display: block; }
+        h1 { margin: 10px 0 5px; }
+        .subtitle { color: #aaa; margin-bottom: 20px; }
+        #player {
+            max-width: 720px;
+            margin: 20px auto;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        #now-playing {
+            background: #222;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            min-height: 80px;
+            text-align: left;
+        }
+        button {
+            padding: 12px 20px;
+            margin: 5px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
+        button:hover { background: #555; }
+        .song-btn {
+            display: block;
+            width: 100%;
+            max-width: 720px;
+            margin: 6px auto;
+            padding: 14px;
+            background: #1f1f1f;
+            color: #fff;
+            border: none;
+            border-radius: 10px;
+            text-align: left;
+            cursor: pointer;
+        }
+        .song-btn:hover { background: #333; }
+        .song-btn.playing { background: #4a2b8a; }
+        .heart { float: right; font-size: 18px; cursor: pointer; }
+        .heart.liked { color: #ff4d94; }
     </style>
 </head>
 <body>
-    <video id="video-bg" autoplay loop muted playsinline><source src="uzi-bg.mp4" type="video/mp4"></video>
-    <div class="overlay"></div>
+    <h1>My Pillowcase Playlist</h1>
+    <div class="subtitle">Lil Uzi Vert Tracker • Static TSV</div>
 
-    <div class="header">
-        <h1>My Pillowcase Playlist</h1>
-        <div class="subtitle">Lil Uzi Vert Tracker • Static TSV</div>
-    </div>
+    <div id="player">
+        <div id="now-playing">
+            <strong>Now Playing:</strong> <span id="current-title">Loading...</span><br>
+            <span id="current-notes" style="font-size:0.9em; color:#bbb;"></span>
+        </div>
 
-    <div class="player">
-        <div class="track-title" id="current-title">Loading...</div>
-        <div class="progress-container" id="progress-container"><div class="progress" id="progress"></div></div>
-        <div class="time">
+        <div>
+            <button id="shuffle-btn">🔀 Shuffle</button>
+            <button id="prev-btn">⏮️</button>
+            <button id="play-pause-btn">▶️</button>
+            <button id="next-btn">⏭️</button>
+        </div>
+
+        <input type="range" id="progress" style="width:100%; margin:15px 0;" value="0">
+        <div style="display:flex; justify-content:space-between; font-size:0.9em;">
             <span id="current-time">0:00</span>
             <span id="duration">0:00</span>
         </div>
-
-        <div class="controls">
-            <button id="shuffle-btn" class="shuffle-btn">🔀 Shuffle</button>
-            <button id="prev-btn">⫻</button>
-            <button id="play-pause-btn">▶</button>
-            <button id="next-btn">⫻</button>
-        </div>
-
-        <div style="text-align:center; margin-top:10px;">
-            <input type="range" id="volume" min="0" max="1" step="0.01" value="0.85" style="width:260px;">
-        </div>
     </div>
 
-    <div class="favorites-header" onclick="toggleFavorites()">
-        ❤️ Favorites (<span id="fav-count">0</span>)
-        <span id="fav-arrow">▼</span>
-    </div>
-    <div id="favorites-list" class="playlist" style="display: none;"></div>
+    <input type="text" id="search" placeholder="Search songs..." style="width:90%; max-width:600px; padding:12px; margin:15px auto; display:block; border-radius:8px; border:none; font-size:16px;">
 
-    <input type="text" id="search" class="search" placeholder="Search songs..." onkeyup="filterSongs()">
-
-    <div class="playlist" id="playlist"></div>
+    <div id="playlist"></div>
 
     <script>
         let songs = [];
-        let currentIndex = 0;
-        let audio = new Audio();
-        let filteredSongs = [];
-        let favorites = JSON.parse(localStorage.getItem('pillowFavorites') || '[]');
+        let currentIndex = -1;
         let isShuffle = false;
+        let audio = new Audio();
+        let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 
-        fetch("tracker.tsv")
-            .then(res => res.text())
+        const csvUrl = "tracker.tsv";
+
+        fetch(csvUrl)
+            .then(res => {
+                if (!res.ok) throw new Error("HTTP " + res.status);
+                return res.text();
+            })
             .then(text => {
                 const lines = text.trim().split('\n');
                 songs = [];
-
                 for (let i = 1; i < lines.length; i++) {
-                    const cols = lines[i].split('\t');   // Tab-separated
-                    let rawLink = cols[cols.length - 1];
+                    const cols = lines[i].split('\t');
+                    if (cols.length < 5) continue;
 
-                    if (rawLink && rawLink.includes('pillows.su/f/')) {
+                    let rawLink = cols[cols.length - 1] || "";
+                    if (rawLink.includes('pillows.su/f/')) {
                         const hash = rawLink.split('/f/')[1].split('?')[0];
                         rawLink = `https://api.pillows.su/api/get/${hash}`;
                     }
 
-                    if (rawLink && rawLink.startsWith('http')) {
+                    if (rawLink.startsWith('http')) {
                         songs.push({
-                            name: (cols[1] || `Track ${songs.length + 1}`).replace(/^"|"$/g, ''),
-                            length: cols[3] || '',
-                            era: cols[0] || '',
-                            notes: (cols[2] || '').replace(/^"|"$/g, ''),
+                            name: cols[1] || "Untitled",
+                            notes: cols[2] || "",
+                            length: cols[3] || "",
+                            era: cols[0] || "",
                             link: rawLink
                         });
                     }
                 }
 
-                if (songs.length === 0) {
-                    document.getElementById('current-title').innerHTML = "No tracks found";
-                    return;
-                }
-
-                filteredSongs = [...songs];
-                currentIndex = Math.floor(Math.random() * songs.length);
-                renderAll();
-                playCurrent();
+                renderPlaylist(songs);
+                playRandomSong();   // ← Auto start random song
             })
-            .catch(err => document.getElementById('current-title').innerHTML = `Error: ${err.message}`);
+            .catch(err => {
+                console.error(err);
+                document.getElementById('current-title').textContent = "Error loading tracks";
+            });
+
+        function playRandomSong() {
+            if (songs.length === 0) return;
+            currentIndex = Math.floor(Math.random() * songs.length);
+            playCurrent();
+        }
 
         function playCurrent() {
-            const track = songs[currentIndex];
-            audio.src = track.link;
+            if (currentIndex < 0 || currentIndex >= songs.length) return;
+            const song = songs[currentIndex];
+            audio.src = song.link;
             audio.play().catch(() => {});
-            document.getElementById('play-pause-btn').innerHTML = '❚❚';
-            document.getElementById('current-title').innerHTML = `${track.name} <span id="fav-player-heart" class="fav-player-btn" onclick="toggleCurrentFavorite()">♡</span>`;
-            renderAll();
+            document.getElementById('current-title').textContent = song.name;
+            document.getElementById('current-notes').innerHTML = 
+                `<strong>Era:</strong> ${song.era}<br><strong>Notes:</strong> ${song.notes}`;
+            
+            renderPlaylist(songs); // highlight playing song
         }
 
-        // Favorites + render functions (same as before)
-        function saveFavorites() {
-            localStorage.setItem('pillowFavorites', JSON.stringify(favorites));
-            document.getElementById('fav-count').textContent = favorites.length;
-        }
-
-        function isFavorited(idx) { return favorites.includes(idx); }
-
-        function toggleFavorite(idx) {
-            if (isFavorited(idx)) favorites = favorites.filter(i => i !== idx);
-            else favorites.push(idx);
-            saveFavorites();
-            renderAll();
-            updatePlayerHeart();
-        }
-
-        function toggleCurrentFavorite() { toggleFavorite(currentIndex); }
-
-        function updatePlayerHeart() {
-            const heart = document.getElementById('fav-player-heart');
-            heart.textContent = isFavorited(currentIndex) ? '❤️' : '♡';
-            heart.classList.toggle('liked', isFavorited(currentIndex));
-        }
-
-        function toggleFavorites() {
-            const list = document.getElementById('favorites-list');
-            list.style.display = list.style.display === 'none' ? 'block' : 'none';
-            document.getElementById('fav-arrow').textContent = list.style.display === 'none' ? '▼' : '▲';
-        }
-
-        function renderFavorites() {
-            const container = document.getElementById('favorites-list');
-            container.innerHTML = favorites.length === 0 ? '<div style="text-align:center;color:#666;padding:30px;">No favorites yet ❤️</div>' : '';
-            favorites.forEach(idx => {
-                const track = songs[idx];
+        function renderPlaylist(filtered) {
+            const container = document.getElementById('playlist');
+            container.innerHTML = '';
+            filtered.forEach((song, idx) => {
                 const btn = document.createElement('button');
                 btn.className = 'song-btn';
                 if (idx === currentIndex) btn.classList.add('playing');
-                btn.innerHTML = `▶ ${track.name} <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${idx});">❤️</span>`;
-                btn.onclick = () => { currentIndex = idx; playCurrent(); };
-                container.appendChild(btn);
-            });
-        }
-
-        function renderPlaylist() {
-            const container = document.getElementById('playlist');
-            container.innerHTML = '';
-            filteredSongs.forEach((track, i) => {
-                const globalIdx = songs.indexOf(track);
-                const btn = document.createElement('button');
-                btn.className = 'song-btn';
-                if (globalIdx === currentIndex) btn.classList.add('playing');
-                const isFav = isFavorited(globalIdx);
+                
                 btn.innerHTML = `
-                    ▶ ${track.name}
-                    <span class="heart ${isFav ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">${isFav ? '❤️' : '♡'}</span>
-                    <div class="description">${track.era ? '<strong>' + track.era + '</strong><br>' : ''}${track.notes}</div>
+                    ▶ ${song.name}
+                    <span class="heart ${favorites.includes(idx) ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${idx})">❤️</span>
                 `;
-                btn.onclick = (e) => {
-                    if (e.target.classList.contains('heart')) return;
-                    btn.classList.toggle('expanded');
-                    currentIndex = globalIdx;
+                btn.onclick = () => {
+                    currentIndex = songs.indexOf(song);
                     playCurrent();
                 };
                 container.appendChild(btn);
             });
         }
 
-        function renderAll() {
-            renderFavorites();
-            renderPlaylist();
-            updatePlayerHeart();
+        function toggleFavorite(idx) {
+            if (favorites.includes(idx)) {
+                favorites = favorites.filter(i => i !== idx);
+            } else {
+                favorites.push(idx);
+            }
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            renderPlaylist(songs);
         }
 
-        function filterSongs() {
-            const term = document.getElementById('search').value.toLowerCase();
-            filteredSongs = songs.filter(t => (t.name || '').toLowerCase().includes(term));
-            renderPlaylist();
-        }
-
-        document.getElementById('play-pause-btn').onclick = () => {
-            if (audio.paused) { audio.play(); document.getElementById('play-pause-btn').innerHTML = '❚❚'; }
-            else { audio.pause(); document.getElementById('play-pause-btn').innerHTML = '▶'; }
-        };
-
+        // Controls
+        document.getElementById('play-pause-btn').onclick = () => audio.paused ? audio.play() : audio.pause();
         document.getElementById('next-btn').onclick = () => {
-            if (isShuffle) currentIndex = Math.floor(Math.random() * songs.length);
-            else currentIndex = (currentIndex + 1) % songs.length;
+            currentIndex = isShuffle ? Math.floor(Math.random()*songs.length) : (currentIndex + 1) % songs.length;
             playCurrent();
         };
-
         document.getElementById('prev-btn').onclick = () => {
-            currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+            currentIndex = isShuffle ? Math.floor(Math.random()*songs.length) : (currentIndex - 1 + songs.length) % songs.length;
             playCurrent();
         };
-
         document.getElementById('shuffle-btn').onclick = () => {
             isShuffle = !isShuffle;
-            document.getElementById('shuffle-btn').classList.toggle('active', isShuffle);
+            alert(isShuffle ? "🔀 Shuffle ON" : "Shuffle OFF");
         };
 
-        document.getElementById('volume').oninput = (e) => audio.volume = parseFloat(e.target.value);
-
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress');
-
+        // Progress
         audio.ontimeupdate = () => {
-            if (audio.duration) {
-                progressBar.style.width = (audio.currentTime / audio.duration * 100) + '%';
-                document.getElementById('current-time').textContent = formatTime(audio.currentTime);
-                document.getElementById('duration').textContent = formatTime(audio.duration);
-            }
+            const progress = document.getElementById('progress');
+            progress.value = (audio.currentTime / audio.duration) * 100 || 0;
+            document.getElementById('current-time').textContent = formatTime(audio.currentTime);
+        };
+        document.getElementById('progress').oninput = (e) => {
+            audio.currentTime = (e.target.value / 100) * audio.duration;
+        };
+        audio.onloadedmetadata = () => {
+            document.getElementById('duration').textContent = formatTime(audio.duration);
+        };
+        audio.onended = () => {
+            document.getElementById('next-btn').click();
         };
 
-        progressContainer.onclick = (e) => {
-            const rect = progressContainer.getBoundingClientRect();
-            audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
-        };
-
-        function formatTime(s) {
-            const m = Math.floor(s / 60);
-            const sec = Math.floor(s % 60);
-            return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+        function formatTime(seconds) {
+            if (!seconds || isNaN(seconds)) return "0:00";
+            const min = Math.floor(seconds / 60);
+            const sec = Math.floor(seconds % 60);
+            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
         }
 
-        audio.onended = () => document.getElementById('next-btn').click();
+        // Search
+        document.getElementById('search').onkeyup = function() {
+            const term = this.value.toLowerCase();
+            const filtered = songs.filter(s => s.name.toLowerCase().includes(term));
+            renderPlaylist(filtered);
+        };
     </script>
 </body>
 </html>
