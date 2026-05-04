@@ -4,71 +4,31 @@
     <meta charset="UTF-8">
     <title>My Pillowcase Playlist (Lil Uzi Vert)</title>
     <style>
-        body { 
-            font-family: Arial, sans-serif; 
-            background: #0a0a0a; 
-            color: #fff; 
-            margin: 0; 
-            padding: 20px; 
-            text-align: center;
-        }
+        body { font-family: Arial, sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 20px; text-align: center; }
         h1 { margin: 10px 0 5px; }
         .subtitle { color: #aaa; margin-bottom: 20px; }
-        #player {
-            max-width: 720px;
-            margin: 20px auto;
-            background: #1a1a1a;
-            border-radius: 12px;
-            padding: 20px;
-        }
-        #now-playing {
-            background: #222;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 15px;
-            min-height: 80px;
-            text-align: left;
-        }
-        #current-title a {
-            color: #bb86fc;
-            text-decoration: underline;
-        }
-        button {
-            padding: 12px 20px;
-            margin: 5px;
-            background: #333;
-            color: white;
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
+        #player { max-width: 720px; margin: 20px auto; background: #1a1a1a; border-radius: 12px; padding: 20px; }
+        #now-playing { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; }
+        #current-title a { color: #bb86fc; text-decoration: underline; }
+        button { padding: 12px 20px; margin: 5px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; }
         button:hover { background: #555; }
-        #shuffle-btn.active {
-            background: #bb86fc;
-            color: black;
-        }
-        .song-btn {
-            display: block;
-            width: 100%;
-            max-width: 720px;
-            margin: 6px auto;
-            padding: 14px;
-            background: #1f1f1f;
-            color: #fff;
-            border: none;
-            border-radius: 10px;
-            text-align: left;
-            cursor: pointer;
-        }
+        #shuffle-btn.active { background: #bb86fc; color: black; }
+        .song-btn { display: block; width: 100%; max-width: 720px; margin: 6px auto; padding: 14px; background: #1f1f1f; color: #fff; border: none; border-radius: 10px; text-align: left; cursor: pointer; }
         .song-btn:hover { background: #333; }
         .song-btn.playing { background: #4a2b8a; }
         .heart { float: right; font-size: 18px; cursor: pointer; }
         .heart.liked { color: #ff4d94; }
+        .collapsible { cursor: pointer; padding: 15px; background: #222; border-radius: 8px; margin-bottom: 10px; text-align: left; }
     </style>
 </head>
 <body>
     <h1>My Pillowcase Playlist</h1>
     <div class="subtitle">Lil Uzi Vert Tracker • Static TSV</div>
+
+    <div class="collapsible" onclick="toggleFavorites()">
+        ❤️ Favorites (<span id="fav-count">0</span>)
+    </div>
+    <div id="favorites-list" style="display:none; margin-bottom:20px;"></div>
 
     <div id="player">
         <div id="now-playing">
@@ -107,9 +67,7 @@
         let audio = new Audio();
         let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
 
-        const csvUrl = "tracker.tsv";
-
-        fetch(csvUrl)
+        fetch("tracker.tsv")
             .then(res => res.text())
             .then(text => {
                 const lines = text.trim().split('\n');
@@ -118,29 +76,32 @@
                     const cols = lines[i].split('\t');
                     if (cols.length < 5) continue;
 
-                    let rawLink = cols[cols.length - 1] || "";
-                    let pillowLink = rawLink; // original pillowcase link for hyperlink
-                    if (rawLink.includes('pillows.su/f/')) {
-                        const hash = rawLink.split('/f/')[1].split('?')[0];
-                        rawLink = `https://api.pillows.su/api/get/${hash}`;
+                    let rawLinks = (cols[cols.length - 1] || "").trim();
+                    // Take ONLY the first valid pillow link
+                    let pillowLink = "";
+                    const linkMatch = rawLinks.match(/https:\/\/pillows\.su\/f\/[^\s]+/);
+                    if (linkMatch) pillowLink = linkMatch[0];
+
+                    let playableLink = pillowLink;
+                    if (playableLink) {
+                        const hash = playableLink.split('/f/')[1].split('?')[0];
+                        playableLink = `https://api.pillows.su/api/get/${hash}`;
                     }
 
-                    if (rawLink.startsWith('http')) {
+                    if (playableLink) {
                         songs.push({
                             name: cols[1] || "Untitled",
                             notes: cols[2] || "",
-                            length: cols[3] || "",
                             era: cols[0] || "",
-                            link: rawLink,
-                            pillowLink: pillowLink || rawLink
+                            link: playableLink,
+                            pillowLink: pillowLink
                         });
                     }
                 }
-
                 renderPlaylist(songs);
+                renderFavorites();
                 playRandomSong();
-            })
-            .catch(err => console.error(err));
+            });
 
         function playRandomSong() {
             if (songs.length === 0) return;
@@ -154,32 +115,27 @@
             audio.src = song.link;
             audio.play().catch(() => {});
 
-            const titleEl = document.getElementById('current-title');
-            titleEl.innerHTML = `<a href="${song.pillowLink}" target="_blank">${song.name}</a>`;
+            document.getElementById('current-title').innerHTML = 
+                `<a href="${song.pillowLink}" target="_blank">${song.name}</a>`;
 
             document.getElementById('current-notes').innerHTML = 
                 `<strong>Era:</strong> ${song.era}<br><strong>Notes:</strong> ${song.notes}`;
 
             renderPlaylist(songs);
+            renderFavorites();
         }
 
         function renderPlaylist(filtered) {
             const container = document.getElementById('playlist');
             container.innerHTML = '';
-            filtered.forEach((song, globalIdx) => {
+            filtered.forEach((song, i) => {
+                const globalIdx = songs.indexOf(song);
                 const btn = document.createElement('button');
                 btn.className = 'song-btn';
                 if (globalIdx === currentIndex) btn.classList.add('playing');
                 
-                btn.innerHTML = `
-                    ▶ ${song.name}
-                    <span class="heart ${favorites.includes(globalIdx) ? 'liked' : ''}" 
-                          onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx})">❤️</span>
-                `;
-                btn.onclick = () => {
-                    currentIndex = songs.indexOf(song);
-                    playCurrent();
-                };
+                btn.innerHTML = `▶ ${song.name} <span class="heart ${favorites.includes(globalIdx) ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx})">❤️</span>`;
+                btn.onclick = () => { currentIndex = globalIdx; playCurrent(); };
                 container.appendChild(btn);
             });
         }
@@ -192,54 +148,67 @@
             }
             localStorage.setItem('favorites', JSON.stringify(favorites));
             renderPlaylist(songs);
+            renderFavorites();
+        }
+
+        function renderFavorites() {
+            const container = document.getElementById('favorites-list');
+            const countEl = document.getElementById('fav-count');
+            container.innerHTML = '';
+
+            const favSongs = favorites.map(idx => songs[idx]).filter(Boolean);
+            countEl.textContent = favSongs.length;
+
+            favSongs.forEach((song, i) => {
+                const globalIdx = songs.indexOf(song);
+                const btn = document.createElement('button');
+                btn.className = 'song-btn';
+                if (globalIdx === currentIndex) btn.classList.add('playing');
+                btn.innerHTML = `▶ ${song.name} <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx})">❤️</span>`;
+                btn.onclick = () => { currentIndex = globalIdx; playCurrent(); };
+                container.appendChild(btn);
+            });
+        }
+
+        function toggleFavorites() {
+            const list = document.getElementById('favorites-list');
+            list.style.display = list.style.display === 'none' ? 'block' : 'none';
         }
 
         // Controls
-        document.getElementById('play-pause-btn').onclick = () => {
-            audio.paused ? audio.play() : audio.pause();
+        document.getElementById('shuffle-btn').onclick = () => {
+            isShuffle = !isShuffle;
+            document.getElementById('shuffle-btn').classList.toggle('active', isShuffle);
         };
+
+        document.getElementById('play-pause-btn').onclick = () => audio.paused ? audio.play() : audio.pause();
         document.getElementById('next-btn').onclick = () => {
-            currentIndex = isShuffle 
-                ? Math.floor(Math.random() * songs.length) 
-                : (currentIndex + 1) % songs.length;
+            currentIndex = isShuffle ? Math.floor(Math.random() * songs.length) : (currentIndex + 1) % songs.length;
             playCurrent();
         };
         document.getElementById('prev-btn').onclick = () => {
-            currentIndex = isShuffle 
-                ? Math.floor(Math.random() * songs.length) 
-                : (currentIndex - 1 + songs.length) % songs.length;
+            currentIndex = isShuffle ? Math.floor(Math.random() * songs.length) : (currentIndex - 1 + songs.length) % songs.length;
             playCurrent();
         };
 
-        const shuffleBtn = document.getElementById('shuffle-btn');
-        shuffleBtn.onclick = () => {
-            isShuffle = !isShuffle;
-            shuffleBtn.classList.toggle('active', isShuffle);
-        };
-
-        // Volume
         const volumeSlider = document.getElementById('volume');
         volumeSlider.oninput = () => audio.volume = volumeSlider.value;
 
-        // Progress
+        // Progress & time
         audio.ontimeupdate = () => {
-            const progress = document.getElementById('progress');
-            if (audio.duration) progress.value = (audio.currentTime / audio.duration) * 100;
+            const prog = document.getElementById('progress');
+            if (audio.duration) prog.value = (audio.currentTime / audio.duration) * 100;
             document.getElementById('current-time').textContent = formatTime(audio.currentTime);
         };
-        document.getElementById('progress').oninput = (e) => {
-            audio.currentTime = (e.target.value / 100) * audio.duration;
-        };
-        audio.onloadedmetadata = () => {
-            document.getElementById('duration').textContent = formatTime(audio.duration);
-        };
+        document.getElementById('progress').oninput = e => audio.currentTime = (e.target.value / 100) * audio.duration;
+        audio.onloadedmetadata = () => document.getElementById('duration').textContent = formatTime(audio.duration);
         audio.onended = () => document.getElementById('next-btn').click();
 
-        function formatTime(seconds) {
-            if (!seconds || isNaN(seconds)) return "0:00";
-            const min = Math.floor(seconds / 60);
-            const sec = Math.floor(seconds % 60);
-            return `${min}:${sec < 10 ? '0' : ''}${sec}`;
+        function formatTime(s) {
+            if (!s || isNaN(s)) return "0:00";
+            const m = Math.floor(s / 60);
+            const sec = Math.floor(s % 60);
+            return `${m}:${sec < 10 ? '0' : ''}${sec}`;
         }
 
         // Search
