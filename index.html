@@ -60,11 +60,11 @@
 
     <div class="header">
         <h1>My Pillowcase Playlist</h1>
-        <div class="subtitle">Lil Uzi Vert Tracker • Live Sync</div>
+        <div class="subtitle">Lil Uzi Vert Tracker • Static CSV</div>
     </div>
 
     <div class="player">
-        <div class="track-title" id="current-title">Loading tracks from Google Sheets...</div>
+        <div class="track-title" id="current-title">Loading tracks...</div>
         <div class="progress-container" id="progress-container"><div class="progress" id="progress"></div></div>
         <div class="time">
             <span id="current-time">0:00</span>
@@ -101,11 +101,12 @@
         let favorites = JSON.parse(localStorage.getItem('pillowFavorites') || '[]');
         let isShuffle = false;
 
-        const csvUrl = "https://docs.google.com/spreadsheets/d/1zqqdIds1iwnx4lh29iF1IlraeuqfGhxH9qLNlWOnryo/pub?output=csv";
+        // === PUT YOUR GITHUB RAW CSV LINK HERE ===
+        const csvUrl = "https://raw.githubusercontent.com/YOURUSERNAME/YOURREPO/main/tracker.csv";
 
         fetch(csvUrl)
             .then(res => {
-                if (!res.ok) throw new Error("Failed to fetch CSV");
+                if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
                 return res.text();
             })
             .then(text => {
@@ -117,7 +118,7 @@
                     let rawLink = cols[cols.length - 1];
 
                     if (rawLink && rawLink.includes('pillows.su/f/')) {
-                        const hash = rawLink.split('/f/')[1].split('?')[0]; // clean any extra params
+                        const hash = rawLink.split('/f/')[1].split('?')[0];
                         rawLink = `https://api.pillows.su/api/get/${hash}`;
                     }
 
@@ -133,7 +134,7 @@
                 });
 
                 if (songs.length === 0) {
-                    document.getElementById('current-title').innerHTML = "No tracks found — check spreadsheet publish settings";
+                    document.getElementById('current-title').innerHTML = "No tracks found in CSV";
                     return;
                 }
 
@@ -144,7 +145,7 @@
             })
             .catch(err => {
                 console.error(err);
-                document.getElementById('current-title').innerHTML = "Error loading spreadsheet — make sure it's published as CSV";
+                document.getElementById('current-title').innerHTML = `Error loading CSV: ${err.message}<br>Check your raw GitHub URL`;
             });
 
         function playCurrent() {
@@ -156,7 +157,7 @@
             renderAll();
         }
 
-        // (The rest of the script is unchanged from the previous version — favorites, shuffle, etc.)
+        // (favorites, shuffle, controls, render functions — same as before)
         function saveFavorites() {
             localStorage.setItem('pillowFavorites', JSON.stringify(favorites));
             document.getElementById('fav-count').textContent = favorites.length;
