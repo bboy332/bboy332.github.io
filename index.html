@@ -94,186 +94,186 @@
     <div class="playlist" id="playlist"></div>
 
     <script>
-        let songs = [];
-        let currentIndex = 0;
-        let audio = new Audio();
-        let filteredSongs = [];
-        let favorites = JSON.parse(localStorage.getItem('pillowFavorites') || '[]');
-        let isShuffle = false;
+    let songs = [];
+    let currentIndex = 0;
+    let audio = new Audio();
+    let filteredSongs = [];
+    let favorites = JSON.parse(localStorage.getItem('pillowFavorites') || '[]');
+    let isShuffle = false;
 
-        // === PUT YOUR GITHUB RAW CSV LINK HERE ===
-        const csvUrl = "https://raw.githubusercontent.com/bboy332/bboy332/main/tracker.csv";
+    // Relative path to the CSV in the same folder
+    const csvUrl = "tracker.csv";
 
-        fetch(csvUrl)
-            .then(res => {
-                if (!res.ok) throw new Error(`HTTP error! Status: ${res.status}`);
-                return res.text();
-            })
-            .then(text => {
-                const rows = text.trim().split('\n');
-                songs = [];
+    fetch(csvUrl)
+        .then(res => {
+            if (!res.ok) throw new Error(`HTTP ${res.status} — Make sure tracker.csv is uploaded`);
+            return res.text();
+        })
+        .then(text => {
+            const rows = text.trim().split('\n');
+            songs = [];
 
-                rows.slice(1).forEach(row => {
-                    const cols = row.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
-                    let rawLink = cols[cols.length - 1];
+            rows.slice(1).forEach(row => {
+                const cols = row.split(',').map(c => c.trim().replace(/^"|"$/g, ''));
+                let rawLink = cols[cols.length - 1];
 
-                    if (rawLink && rawLink.includes('pillows.su/f/')) {
-                        const hash = rawLink.split('/f/')[1].split('?')[0];
-                        rawLink = `https://api.pillows.su/api/get/${hash}`;
-                    }
-
-                    if (rawLink && rawLink.startsWith('http')) {
-                        songs.push({
-                            name: cols[1] || `Track ${songs.length + 1}`,
-                            length: cols[3] || '',
-                            era: cols[0] || '',
-                            notes: cols[2] || '',
-                            link: rawLink
-                        });
-                    }
-                });
-
-                if (songs.length === 0) {
-                    document.getElementById('current-title').innerHTML = "No tracks found in CSV";
-                    return;
+                if (rawLink && rawLink.includes('pillows.su/f/')) {
+                    const hash = rawLink.split('/f/')[1].split('?')[0];
+                    rawLink = `https://api.pillows.su/api/get/${hash}`;
                 }
 
-                filteredSongs = [...songs];
-                currentIndex = Math.floor(Math.random() * songs.length);
-                renderAll();
-                playCurrent();
-            })
-            .catch(err => {
-                console.error(err);
-                document.getElementById('current-title').innerHTML = `Error loading CSV: ${err.message}<br>Check your raw GitHub URL`;
+                if (rawLink && rawLink.startsWith('http')) {
+                    songs.push({
+                        name: cols[1] || `Track ${songs.length + 1}`,
+                        length: cols[3] || '',
+                        era: cols[0] || '',
+                        notes: cols[2] || '',
+                        link: rawLink
+                    });
+                }
             });
 
-        function playCurrent() {
-            const track = songs[currentIndex];
-            audio.src = track.link;
-            audio.play().catch(() => {});
-            document.getElementById('play-pause-btn').innerHTML = '❚❚';
-            document.getElementById('current-title').innerHTML = `${track.name} <span id="fav-player-heart" class="fav-player-btn" onclick="toggleCurrentFavorite()">♡</span>`;
-            renderAll();
-        }
-
-        // (favorites, shuffle, controls, render functions — same as before)
-        function saveFavorites() {
-            localStorage.setItem('pillowFavorites', JSON.stringify(favorites));
-            document.getElementById('fav-count').textContent = favorites.length;
-        }
-
-        function isFavorited(idx) { return favorites.includes(idx); }
-
-        function toggleFavorite(idx) {
-            if (isFavorited(idx)) favorites = favorites.filter(i => i !== idx);
-            else favorites.push(idx);
-            saveFavorites();
-            renderAll();
-            updatePlayerHeart();
-        }
-
-        function toggleCurrentFavorite() { toggleFavorite(currentIndex); }
-
-        function updatePlayerHeart() {
-            const heart = document.getElementById('fav-player-heart');
-            heart.textContent = isFavorited(currentIndex) ? '❤️' : '♡';
-            heart.classList.toggle('liked', isFavorited(currentIndex));
-        }
-
-        function toggleFavorites() {
-            const list = document.getElementById('favorites-list');
-            list.style.display = list.style.display === 'none' ? 'block' : 'none';
-            document.getElementById('fav-arrow').textContent = list.style.display === 'none' ? '▼' : '▲';
-        }
-
-        function renderFavorites() {
-            const container = document.getElementById('favorites-list');
-            container.innerHTML = favorites.length === 0 ? '<div style="text-align:center;color:#666;padding:30px;">No favorites yet ❤️</div>' : '';
-            favorites.forEach(idx => {
-                const track = songs[idx];
-                const btn = document.createElement('button');
-                btn.className = 'song-btn';
-                if (idx === currentIndex) btn.classList.add('playing');
-                btn.innerHTML = `▶ ${track.name} <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${idx});">❤️</span>`;
-                btn.onclick = () => { currentIndex = idx; playCurrent(); };
-                container.appendChild(btn);
-            });
-        }
-
-        function renderPlaylist() {
-            const container = document.getElementById('playlist');
-            container.innerHTML = '';
-            filteredSongs.forEach((track, i) => {
-                const globalIdx = songs.indexOf(track);
-                const btn = document.createElement('button');
-                btn.className = 'song-btn';
-                if (globalIdx === currentIndex) btn.classList.add('playing');
-                const isFav = isFavorited(globalIdx);
-                btn.innerHTML = `▶ ${track.name} <span class="heart ${isFav ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">${isFav ? '❤️' : '♡'}</span>`;
-                btn.onclick = () => { currentIndex = globalIdx; playCurrent(); };
-                container.appendChild(btn);
-            });
-        }
-
-        function renderAll() {
-            renderFavorites();
-            renderPlaylist();
-            updatePlayerHeart();
-        }
-
-        function filterSongs() {
-            const term = document.getElementById('search').value.toLowerCase();
-            filteredSongs = songs.filter(t => (t.name || '').toLowerCase().includes(term));
-            renderPlaylist();
-        }
-
-        document.getElementById('play-pause-btn').onclick = () => {
-            if (audio.paused) { audio.play(); document.getElementById('play-pause-btn').innerHTML = '❚❚'; }
-            else { audio.pause(); document.getElementById('play-pause-btn').innerHTML = '▶'; }
-        };
-
-        document.getElementById('next-btn').onclick = () => {
-            if (isShuffle) currentIndex = Math.floor(Math.random() * songs.length);
-            else currentIndex = (currentIndex + 1) % songs.length;
-            playCurrent();
-        };
-
-        document.getElementById('prev-btn').onclick = () => {
-            currentIndex = (currentIndex - 1 + songs.length) % songs.length;
-            playCurrent();
-        };
-
-        document.getElementById('shuffle-btn').onclick = () => {
-            isShuffle = !isShuffle;
-            document.getElementById('shuffle-btn').classList.toggle('active', isShuffle);
-        };
-
-        document.getElementById('volume').oninput = (e) => audio.volume = parseFloat(e.target.value);
-
-        const progressContainer = document.getElementById('progress-container');
-        const progressBar = document.getElementById('progress');
-
-        audio.ontimeupdate = () => {
-            if (audio.duration) {
-                progressBar.style.width = (audio.currentTime / audio.duration * 100) + '%';
-                document.getElementById('current-time').textContent = formatTime(audio.currentTime);
-                document.getElementById('duration').textContent = formatTime(audio.duration);
+            if (songs.length === 0) {
+                document.getElementById('current-title').innerHTML = "No tracks found in tracker.csv";
+                return;
             }
-        };
 
-        progressContainer.onclick = (e) => {
-            const rect = progressContainer.getBoundingClientRect();
-            audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
-        };
+            filteredSongs = [...songs];
+            currentIndex = Math.floor(Math.random() * songs.length);
+            renderAll();
+            playCurrent();
+        })
+        .catch(err => {
+            console.error(err);
+            document.getElementById('current-title').innerHTML = `Error: ${err.message}<br>Make sure tracker.csv is in the same folder as index.html`;
+        });
 
-        function formatTime(s) {
-            const m = Math.floor(s / 60);
-            const sec = Math.floor(s % 60);
-            return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+    function playCurrent() {
+        const track = songs[currentIndex];
+        audio.src = track.link;
+        audio.play().catch(() => {});
+        document.getElementById('play-pause-btn').innerHTML = '❚❚';
+        document.getElementById('current-title').innerHTML = `${track.name} <span id="fav-player-heart" class="fav-player-btn" onclick="toggleCurrentFavorite()">♡</span>`;
+        renderAll();
+    }
+
+    // Favorites, shuffle, render functions (same as before)
+    function saveFavorites() {
+        localStorage.setItem('pillowFavorites', JSON.stringify(favorites));
+        document.getElementById('fav-count').textContent = favorites.length;
+    }
+
+    function isFavorited(idx) { return favorites.includes(idx); }
+
+    function toggleFavorite(idx) {
+        if (isFavorited(idx)) favorites = favorites.filter(i => i !== idx);
+        else favorites.push(idx);
+        saveFavorites();
+        renderAll();
+        updatePlayerHeart();
+    }
+
+    function toggleCurrentFavorite() { toggleFavorite(currentIndex); }
+
+    function updatePlayerHeart() {
+        const heart = document.getElementById('fav-player-heart');
+        heart.textContent = isFavorited(currentIndex) ? '❤️' : '♡';
+        heart.classList.toggle('liked', isFavorited(currentIndex));
+    }
+
+    function toggleFavorites() {
+        const list = document.getElementById('favorites-list');
+        list.style.display = list.style.display === 'none' ? 'block' : 'none';
+        document.getElementById('fav-arrow').textContent = list.style.display === 'none' ? '▼' : '▲';
+    }
+
+    function renderFavorites() {
+        const container = document.getElementById('favorites-list');
+        container.innerHTML = favorites.length === 0 ? '<div style="text-align:center;color:#666;padding:30px;">No favorites yet ❤️</div>' : '';
+        favorites.forEach(idx => {
+            const track = songs[idx];
+            const btn = document.createElement('button');
+            btn.className = 'song-btn';
+            if (idx === currentIndex) btn.classList.add('playing');
+            btn.innerHTML = `▶ ${track.name} <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${idx});">❤️</span>`;
+            btn.onclick = () => { currentIndex = idx; playCurrent(); };
+            container.appendChild(btn);
+        });
+    }
+
+    function renderPlaylist() {
+        const container = document.getElementById('playlist');
+        container.innerHTML = '';
+        filteredSongs.forEach((track, i) => {
+            const globalIdx = songs.indexOf(track);
+            const btn = document.createElement('button');
+            btn.className = 'song-btn';
+            if (globalIdx === currentIndex) btn.classList.add('playing');
+            const isFav = isFavorited(globalIdx);
+            btn.innerHTML = `▶ ${track.name} <span class="heart ${isFav ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">${isFav ? '❤️' : '♡'}</span>`;
+            btn.onclick = () => { currentIndex = globalIdx; playCurrent(); };
+            container.appendChild(btn);
+        });
+    }
+
+    function renderAll() {
+        renderFavorites();
+        renderPlaylist();
+        updatePlayerHeart();
+    }
+
+    function filterSongs() {
+        const term = document.getElementById('search').value.toLowerCase();
+        filteredSongs = songs.filter(t => (t.name || '').toLowerCase().includes(term));
+        renderPlaylist();
+    }
+
+    document.getElementById('play-pause-btn').onclick = () => {
+        if (audio.paused) { audio.play(); document.getElementById('play-pause-btn').innerHTML = '❚❚'; }
+        else { audio.pause(); document.getElementById('play-pause-btn').innerHTML = '▶'; }
+    };
+
+    document.getElementById('next-btn').onclick = () => {
+        if (isShuffle) currentIndex = Math.floor(Math.random() * songs.length);
+        else currentIndex = (currentIndex + 1) % songs.length;
+        playCurrent();
+    };
+
+    document.getElementById('prev-btn').onclick = () => {
+        currentIndex = (currentIndex - 1 + songs.length) % songs.length;
+        playCurrent();
+    };
+
+    document.getElementById('shuffle-btn').onclick = () => {
+        isShuffle = !isShuffle;
+        document.getElementById('shuffle-btn').classList.toggle('active', isShuffle);
+    };
+
+    document.getElementById('volume').oninput = (e) => audio.volume = parseFloat(e.target.value);
+
+    const progressContainer = document.getElementById('progress-container');
+    const progressBar = document.getElementById('progress');
+
+    audio.ontimeupdate = () => {
+        if (audio.duration) {
+            progressBar.style.width = (audio.currentTime / audio.duration * 100) + '%';
+            document.getElementById('current-time').textContent = formatTime(audio.currentTime);
+            document.getElementById('duration').textContent = formatTime(audio.duration);
         }
+    };
 
-        audio.onended = () => document.getElementById('next-btn').click();
-    </script>
+    progressContainer.onclick = (e) => {
+        const rect = progressContainer.getBoundingClientRect();
+        audio.currentTime = ((e.clientX - rect.left) / rect.width) * audio.duration;
+    };
+
+    function formatTime(s) {
+        const m = Math.floor(s / 60);
+        const sec = Math.floor(s % 60);
+        return `${m}:${sec < 10 ? '0' : ''}${sec}`;
+    }
+
+    audio.onended = () => document.getElementById('next-btn').click();
+</script>
 </body>
 </html>
