@@ -51,7 +51,6 @@
             font-size: 1.3em;
         }
 
-        /* Sticky Filters */
         .filters {
             position: sticky;
             top: 0;
@@ -89,7 +88,7 @@
             padding: 22px;
             box-shadow: 0 0 30px #ff4d94, 0 0 50px rgba(187, 134, 252, 0.5);
         }
-
+        
         #now-playing { 
             background: #1a0033; 
             padding: 20px; 
@@ -117,6 +116,12 @@
             color: #000;
             transform: scale(1.05);
             box-shadow: 0 0 20px #ff4d94;
+        }
+        button.active { 
+            background: #bb86fc; 
+            color: black; 
+            border-color: #ff4d94;
+            box-shadow: 0 0 20px #bb86fc;
         }
 
         .song-btn { 
@@ -182,7 +187,6 @@
     <div class="subtitle">Credit to Updated Lil Uzi Vert Tracker</div>
 
     <div id="controls">
-        <!-- Player content -->
         <div id="now-playing">
             <strong>NOW PLAYING:</strong> 
             <span id="current-title">—</span><br>
@@ -213,7 +217,6 @@
         </div>
     </div>
 
-    <!-- Filters - Sticky between Player and Favorites -->
     <div class="filters">
         <select id="era-filter">
             <option value="">ALL ERAS</option>
@@ -226,13 +229,11 @@
     </div>
     <div id="favorites-list" style="display:none; margin-bottom:30px;"></div>
 
-    <!-- Visual Break -->
     <div class="section-break">◆ ALL TRACKS ◆</div>
 
     <div id="playlist"></div>
 
     <script>
-        // === Full JavaScript (same as before) ===
         let songs = [];
         let currentIndex = -1;
         let isShuffle = false;
@@ -339,7 +340,8 @@
             if (repeatMode === 2) return playSong(currentIndex);
             let nextIdx = currentIndex;
             if (isShuffle) {
-                do { nextIdx = Math.floor(Math.random() * songs.length); } while (nextIdx === currentIndex && songs.length > 1);
+                do { nextIdx = Math.floor(Math.random() * songs.length); } 
+                while (nextIdx === currentIndex && songs.length > 1);
             } else {
                 nextIdx = (currentIndex + 1) % songs.length;
             }
@@ -347,7 +349,9 @@
         }
 
         function prevSong() {
-            let prevIdx = isShuffle ? Math.floor(Math.random() * songs.length) : (currentIndex - 1 + songs.length) % songs.length;
+            let prevIdx = isShuffle ? 
+                Math.floor(Math.random() * songs.length) : 
+                (currentIndex - 1 + songs.length) % songs.length;
             playSong(prevIdx);
         }
 
