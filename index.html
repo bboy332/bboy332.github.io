@@ -3,42 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <title>My Pillowcase Playlist (Lil Uzi Vert)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
-        body { font-family: Arial, sans-serif; background: #0a0a0a; color: #fff; margin: 0; padding: 20px; text-align: center; }
+        body { 
+            font-family: Arial, sans-serif; 
+            background: #0a0a0a; 
+            color: #fff; 
+            margin: 0; 
+            padding: 20px; 
+            text-align: center; 
+        }
         h1 { margin: 10px 0 5px; }
         .subtitle { color: #aaa; margin-bottom: 20px; }
-        #player { max-width: 720px; margin: 20px auto; background: #1a1a1a; border-radius: 12px; padding: 20px; }
-        #now-playing { background: #222; padding: 15px; border-radius: 10px; margin-bottom: 15px; text-align: left; }
+        
+        #controls {
+            max-width: 720px;
+            margin: 20px auto;
+            background: #1a1a1a;
+            border-radius: 12px;
+            padding: 20px;
+        }
+        #now-playing { 
+            background: #222; 
+            padding: 15px; 
+            border-radius: 10px; 
+            margin-bottom: 15px; 
+            text-align: left; 
+        }
         #current-title a { color: #bb86fc; text-decoration: underline; }
-        button { padding: 12px 20px; margin: 5px; background: #333; color: white; border: none; border-radius: 8px; cursor: pointer; }
+        
+        button { 
+            padding: 12px 16px; 
+            margin: 4px; 
+            background: #333; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            cursor: pointer; 
+        }
         button:hover { background: #555; }
-        #shuffle-btn.active { background: #bb86fc; color: black; }
-        .song-btn { display: block; width: 100%; max-width: 720px; margin: 6px auto; padding: 14px; background: #1f1f1f; color: #fff; border: none; border-radius: 10px; text-align: left; cursor: pointer; }
+        button.active { background: #bb86fc; color: black; }
+
+        .song-btn { 
+            display: block; 
+            width: 100%; 
+            max-width: 720px; 
+            margin: 6px auto; 
+            padding: 14px; 
+            background: #1f1f1f; 
+            color: #fff; 
+            border: none; 
+            border-radius: 10px; 
+            text-align: left; 
+            cursor: pointer; 
+            position: relative;
+        }
         .song-btn:hover { background: #333; }
         .song-btn.playing { background: #4a2b8a; }
-        .heart { float: right; font-size: 20px; cursor: pointer; color: #555; } /* Grey by default */
-        .heart.liked { color: #ff4d94; } /* Red when favorited */
-        .collapsible { cursor: pointer; padding: 15px; background: #222; border-radius: 8px; margin-bottom: 10px; text-align: left; }
+        .song-btn .heart { float: right; font-size: 20px; cursor: pointer; color: #555; }
+        .song-btn .heart.liked { color: #ff4d94; }
+        .song-btn .download { 
+            float: right; 
+            margin-left: 10px; 
+            font-size: 18px; 
+            text-decoration: none; 
+            color: #888;
+        }
+
+        .filters {
+            max-width: 720px;
+            margin: 15px auto;
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        input[type="range"] { accent-color: #bb86fc; }
     </style>
 </head>
 <body>
     <h1>My Pillowcase Playlist</h1>
-    <div class="subtitle">Lil Uzi Vert Tracker • Credit to Updated Lil Uzi Vert Tracker for data</div>
+    <div class="subtitle">Lil Uzi Vert Tracker</div>
 
-    <div class="collapsible" onclick="toggleFavorites()">
-        ❤️ Favorites (<span id="fav-count">0</span>)
+    <div class="filters">
+        <select id="era-filter">
+            <option value="">All Eras</option>
+        </select>
+        <input type="text" id="search" placeholder="Search songs or notes..." style="flex:1; max-width:400px; padding:12px; border-radius:8px; border:none;">
     </div>
-    <div id="favorites-list" style="display:none; margin-bottom:20px;"></div>
 
-    <div id="player">
+    <div id="controls">
         <div id="now-playing">
             <strong>Now Playing:</strong> 
-            <span id="current-title">Loading...</span><br>
+            <span id="current-title">—</span><br>
             <span id="current-notes" style="font-size:0.9em; color:#bbb;"></span>
         </div>
 
         <div>
             <button id="shuffle-btn">🔀 Shuffle</button>
+            <button id="repeat-btn">🔁</button>
             <button id="prev-btn">⏮️</button>
             <button id="play-pause-btn">▶️</button>
             <button id="next-btn">⏭️</button>
@@ -50,13 +114,16 @@
             <span id="duration">0:00</span>
         </div>
 
-        <div style="margin-top:15px;">
+        <div style="margin-top:10px;">
             <label>Volume: </label>
             <input type="range" id="volume" min="0" max="1" step="0.01" value="1" style="width:200px;">
         </div>
     </div>
 
-    <input type="text" id="search" placeholder="Search songs..." style="width:90%; max-width:600px; padding:12px; margin:15px auto; display:block; border-radius:8px; border:none; font-size:16px;">
+    <div class="collapsible" onclick="toggleFavorites()" style="cursor:pointer; padding:15px; background:#222; border-radius:8px; margin:20px auto; max-width:720px;">
+        ❤️ Favorites (<span id="fav-count">0</span>)
+    </div>
+    <div id="favorites-list" style="display:none; margin-bottom:20px;"></div>
 
     <div id="playlist"></div>
 
@@ -64,8 +131,10 @@
         let songs = [];
         let currentIndex = -1;
         let isShuffle = false;
+        let repeatMode = 0; // 0 = off, 1 = all, 2 = one
         let audio = new Audio();
         let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+        let currentEraFilter = "";
 
         fetch("tracker.tsv")
             .then(res => res.text())
@@ -81,62 +150,122 @@
                     const linkMatch = rawLinks.match(/https:\/\/pillows\.su\/f\/[^\s]+/);
                     if (linkMatch) pillowLink = linkMatch[0];
 
-                    let playableLink = pillowLink;
-                    if (playableLink) {
-                        const hash = playableLink.split('/f/')[1].split('?')[0];
-                        playableLink = `https://api.pillows.su/api/get/${hash}`;
-                    }
+                    let playableLink = pillowLink ? 
+                        `https://api.pillows.su/api/get/${pillowLink.split('/f/')[1].split('?')[0]}` : "";
 
                     if (playableLink) {
+                        const era = cols[0] || "Unknown";
                         songs.push({
                             name: cols[1] || "Untitled",
                             notes: cols[2] || "",
-                            era: cols[0] || "",
+                            era: era,
                             link: playableLink,
-                            pillowLink: pillowLink
+                            pillowLink: pillowLink,
+                            fullRow: cols
                         });
                     }
                 }
+
+                populateEraFilter();
                 renderPlaylist(songs);
                 renderFavorites();
-                playRandomSong();
-            });
+                if (songs.length) playRandomSong();
+            })
+            .catch(err => console.error("Failed to load tracker:", err));
 
-        function playRandomSong() {
-            if (songs.length === 0) return;
-            currentIndex = Math.floor(Math.random() * songs.length);
-            playCurrent();
+        function populateEraFilter() {
+            const eras = [...new Set(songs.map(s => s.era))].sort();
+            const select = document.getElementById('era-filter');
+            eras.forEach(era => {
+                const opt = document.createElement('option');
+                opt.value = era;
+                opt.textContent = era;
+                select.appendChild(opt);
+            });
+            select.onchange = () => {
+                currentEraFilter = select.value;
+                renderPlaylist(songs);
+            };
         }
 
-        function playCurrent() {
-            if (currentIndex < 0 || currentIndex >= songs.length) return;
+        function filterSongs() {
+            const term = document.getElementById('search').value.toLowerCase();
+            return songs.filter(song => {
+                const eraMatch = !currentEraFilter || song.era === currentEraFilter;
+                const textMatch = !term || 
+                    song.name.toLowerCase().includes(term) || 
+                    song.notes.toLowerCase().includes(term);
+                return eraMatch && textMatch;
+            });
+        }
+
+        function playSong(index) {
+            if (index < 0 || index >= songs.length) return;
+            currentIndex = index;
             const song = songs[currentIndex];
+            
             audio.src = song.link;
-            audio.play().catch(() => {});
+            audio.play().catch(e => {
+                console.error("Playback failed:", e);
+                alert("Could not play this track. Link might be dead.");
+            });
 
             document.getElementById('current-title').innerHTML = 
                 `<a href="${song.pillowLink}" target="_blank">${song.name}</a>`;
 
             document.getElementById('current-notes').innerHTML = 
-                `<strong>Era:</strong> ${song.era}<br><strong>Notes:</strong> ${song.notes}`;
+                `<strong>Era:</strong> ${song.era}<br><strong>Notes:</strong> ${song.notes || '—'}`;
 
             renderPlaylist(songs);
             renderFavorites();
         }
 
-        function renderPlaylist(filtered) {
+        function playRandomSong() {
+            currentIndex = Math.floor(Math.random() * songs.length);
+            playSong(currentIndex);
+        }
+
+        function nextSong() {
+            if (repeatMode === 2) { // Repeat one
+                playSong(currentIndex);
+                return;
+            }
+            let nextIdx = currentIndex;
+            if (isShuffle) {
+                do { nextIdx = Math.floor(Math.random() * songs.length); } 
+                while (nextIdx === currentIndex && songs.length > 1);
+            } else {
+                nextIdx = (currentIndex + 1) % songs.length;
+            }
+            playSong(nextIdx);
+        }
+
+        function prevSong() {
+            let prevIdx = isShuffle ? 
+                Math.floor(Math.random() * songs.length) : 
+                (currentIndex - 1 + songs.length) % songs.length;
+            playSong(prevIdx);
+        }
+
+        function renderPlaylist(filteredSongs) {
             const container = document.getElementById('playlist');
             container.innerHTML = '';
-            filtered.forEach(song => {
+            
+            filteredSongs.forEach(song => {
                 const globalIdx = songs.indexOf(song);
+                const isPlaying = globalIdx === currentIndex;
                 const isLiked = favorites.includes(globalIdx);
 
                 const btn = document.createElement('button');
-                btn.className = 'song-btn';
-                if (globalIdx === currentIndex) btn.classList.add('playing');
+                btn.className = `song-btn ${isPlaying ? 'playing' : ''}`;
                 
-                btn.innerHTML = `▶ ${song.name} <span class="heart ${isLiked ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx}); return false;">❤️</span>`;
-                btn.onclick = () => { currentIndex = globalIdx; playCurrent(); };
+                btn.innerHTML = `
+                    ▶ ${song.name}
+                    <a href="${song.pillowLink}" target="_blank" class="download" title="Download">⬇</a>
+                    <span class="heart ${isLiked ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">❤️</span>
+                `;
+                
+                btn.onclick = () => playSong(globalIdx);
                 container.appendChild(btn);
             });
         }
@@ -148,7 +277,7 @@
                 favorites.push(idx);
             }
             localStorage.setItem('favorites', JSON.stringify(favorites));
-            renderPlaylist(songs);
+            renderPlaylist(filterSongs());
             renderFavorites();
         }
 
@@ -163,10 +292,13 @@
             favSongs.forEach(song => {
                 const globalIdx = songs.indexOf(song);
                 const btn = document.createElement('button');
-                btn.className = 'song-btn';
-                if (globalIdx === currentIndex) btn.classList.add('playing');
-                btn.innerHTML = `▶ ${song.name} <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx}); return false;">❤️</span>`;
-                btn.onclick = () => { currentIndex = globalIdx; playCurrent(); };
+                btn.className = `song-btn ${globalIdx === currentIndex ? 'playing' : ''}`;
+                btn.innerHTML = `
+                    ▶ ${song.name}
+                    <a href="${song.pillowLink}" target="_blank" class="download">⬇</a>
+                    <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">❤️</span>
+                `;
+                btn.onclick = () => playSong(globalIdx);
                 container.appendChild(btn);
             });
         }
@@ -176,33 +308,48 @@
             list.style.display = list.style.display === 'none' ? 'block' : 'none';
         }
 
-        // Shuffle, controls, volume, progress, search... (same as before)
+        // Event Listeners
+        document.getElementById('play-pause-btn').onclick = () => audio.paused ? audio.play() : audio.pause();
+        document.getElementById('next-btn').onclick = nextSong;
+        document.getElementById('prev-btn').onclick = prevSong;
+        
         document.getElementById('shuffle-btn').onclick = () => {
             isShuffle = !isShuffle;
             document.getElementById('shuffle-btn').classList.toggle('active', isShuffle);
         };
 
-        document.getElementById('play-pause-btn').onclick = () => audio.paused ? audio.play() : audio.pause();
-        document.getElementById('next-btn').onclick = () => {
-            currentIndex = isShuffle ? Math.floor(Math.random() * songs.length) : (currentIndex + 1) % songs.length;
-            playCurrent();
+        document.getElementById('repeat-btn').onclick = () => {
+            repeatMode = (repeatMode + 1) % 3;
+            const btn = document.getElementById('repeat-btn');
+            btn.textContent = repeatMode === 0 ? '🔁' : repeatMode === 1 ? '🔁' : '🔂';
+            btn.classList.toggle('active', repeatMode > 0);
         };
-        document.getElementById('prev-btn').onclick = () => {
-            currentIndex = isShuffle ? Math.floor(Math.random() * songs.length) : (currentIndex - 1 + songs.length) % songs.length;
-            playCurrent();
-        };
+
+        document.getElementById('search').onkeyup = () => renderPlaylist(filterSongs());
 
         const volumeSlider = document.getElementById('volume');
         volumeSlider.oninput = () => audio.volume = volumeSlider.value;
 
+        const progress = document.getElementById('progress');
         audio.ontimeupdate = () => {
-            const prog = document.getElementById('progress');
-            if (audio.duration) prog.value = (audio.currentTime / audio.duration) * 100;
-            document.getElementById('current-time').textContent = formatTime(audio.currentTime);
+            if (audio.duration) {
+                progress.value = (audio.currentTime / audio.duration) * 100;
+                document.getElementById('current-time').textContent = formatTime(audio.currentTime);
+            }
         };
-        document.getElementById('progress').oninput = e => audio.currentTime = (e.target.value / 100) * audio.duration;
-        audio.onloadedmetadata = () => document.getElementById('duration').textContent = formatTime(audio.duration);
-        audio.onended = () => document.getElementById('next-btn').click();
+
+        progress.oninput = e => {
+            if (audio.duration) audio.currentTime = (e.target.value / 100) * audio.duration;
+        };
+
+        audio.onloadedmetadata = () => {
+            document.getElementById('duration').textContent = formatTime(audio.duration);
+        };
+
+        audio.onended = () => {
+            if (repeatMode === 2) playSong(currentIndex);
+            else nextSong();
+        };
 
         function formatTime(s) {
             if (!s || isNaN(s)) return "0:00";
@@ -211,11 +358,22 @@
             return `${m}:${sec < 10 ? '0' : ''}${sec}`;
         }
 
-        document.getElementById('search').onkeyup = function() {
-            const term = this.value.toLowerCase();
-            const filtered = songs.filter(s => s.name.toLowerCase().includes(term));
-            renderPlaylist(filtered);
-        };
+        // Keyboard shortcuts
+        document.addEventListener('keydown', e => {
+            if (e.target.tagName === 'INPUT') return;
+            switch(e.key) {
+                case ' ': 
+                    e.preventDefault(); 
+                    audio.paused ? audio.play() : audio.pause(); 
+                    break;
+                case 'ArrowRight': nextSong(); break;
+                case 'ArrowLeft': prevSong(); break;
+                case 'f': 
+                case 'F': 
+                    toggleFavorite(currentIndex); 
+                    break;
+            }
+        });
     </script>
 </body>
 </html>
