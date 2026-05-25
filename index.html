@@ -19,8 +19,7 @@
         }
 
         #background-video {
-            position: fixed;
-            top: 0; left: 0;
+            position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
             object-fit: cover;
             z-index: -2;
@@ -29,8 +28,7 @@
         }
 
         #background-overlay {
-            position: fixed;
-            top: 0; left: 0;
+            position: fixed; top: 0; left: 0;
             width: 100%; height: 100%;
             background: linear-gradient(135deg, rgba(10,10,10,0.88), rgba(26,0,51,0.92));
             z-index: -1;
@@ -51,9 +49,44 @@
             font-size: 1.3em;
         }
 
-        .filters {
+        #controls {
             position: sticky;
             top: 0;
+            z-index: 100;
+            max-width: 720px;
+            margin: 0 auto 20px;
+            background: rgba(26, 26, 26, 0.96);
+            border: 3px solid #ff4d94;
+            border-radius: 16px;
+            padding: 22px;
+            box-shadow: 0 0 30px #ff4d94, 0 0 50px rgba(187, 134, 252, 0.5);
+        }
+
+        .tab-container {
+            max-width: 720px;
+            margin: 0 auto 15px;
+            display: flex;
+            background: rgba(26,26,26,0.9);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid #ff4d94;
+        }
+        .tab {
+            flex: 1;
+            padding: 14px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.2s;
+        }
+        .tab.active {
+            background: #ff4d94;
+            color: black;
+            font-weight: bold;
+        }
+
+        .filters {
+            position: sticky;
+            top: 260px;
             z-index: 99;
             max-width: 720px;
             margin: 0 auto 20px;
@@ -76,29 +109,6 @@
             font-size: 18px;
         }
 
-        #controls {
-            position: sticky;
-            top: 0;
-            z-index: 100;
-            max-width: 720px;
-            margin: 0 auto 25px;
-            background: rgba(26, 26, 26, 0.96);
-            border: 3px solid #ff4d94;
-            border-radius: 16px;
-            padding: 22px;
-            box-shadow: 0 0 30px #ff4d94, 0 0 50px rgba(187, 134, 252, 0.5);
-        }
-        
-        #now-playing { 
-            background: #1a0033; 
-            padding: 20px; 
-            border-radius: 12px; 
-            margin-bottom: 18px; 
-            text-align: left; 
-            border: 2px solid #bb86fc;
-            box-shadow: inset 0 0 15px rgba(255, 77, 148, 0.4);
-        }
-
         button { 
             padding: 12px 18px; 
             margin: 5px; 
@@ -111,18 +121,8 @@
             font-size: 18px;
             transition: all 0.2s;
         }
-        button:hover { 
-            background: #ff4d94; 
-            color: #000;
-            transform: scale(1.05);
-            box-shadow: 0 0 20px #ff4d94;
-        }
-        button.active { 
-            background: #bb86fc; 
-            color: black; 
-            border-color: #ff4d94;
-            box-shadow: 0 0 20px #bb86fc;
-        }
+        button:hover { background: #ff4d94; color: #000; transform: scale(1.05); box-shadow: 0 0 20px #ff4d94; }
+        button.active { background: #bb86fc; color: black; border-color: #ff4d94; }
 
         .song-btn { 
             display: block; 
@@ -139,41 +139,12 @@
             transition: all 0.2s;
         }
         .song-btn:hover { background: #2a002a; border-color: #ff4d94; transform: translateX(8px); }
-        .song-btn.playing { 
-            background: linear-gradient(90deg, #4a2b8a, #ff4d94);
-            border-color: #bb86fc;
-            box-shadow: 0 0 25px #ff4d94;
-        }
+        .song-btn.playing { background: linear-gradient(90deg, #4a2b8a, #ff4d94); border-color: #bb86fc; box-shadow: 0 0 25px #ff4d94; }
 
-        .heart { float: right; font-size: 26px; cursor: pointer; color: #666; }
+        .heart { float: right; font-size: 26px; cursor: pointer; color: #666; user-select: none; }
         .heart.liked { color: #ff4d94; }
 
-        .song-btn .download { 
-            float: right; 
-            margin-left: 14px; 
-            font-size: 20px; 
-            color: #bb86fc;
-        }
-
-        .section-break {
-            max-width: 720px;
-            margin: 40px auto 20px;
-            text-align: center;
-            color: #ff4d94;
-            font-size: 1.4em;
-            text-shadow: 0 0 10px #ff4d94;
-        }
-
-        .collapsible {
-            cursor: pointer; 
-            padding: 16px; 
-            background: #1a0033; 
-            border: 2px solid #ff4d94;
-            border-radius: 12px; 
-            margin: 20px auto; 
-            max-width: 720px;
-            font-size: 20px;
-        }
+        .song-btn .download { float: right; margin-left: 14px; font-size: 20px; color: #bb86fc; }
     </style>
 </head>
 <body>
@@ -217,19 +188,19 @@
         </div>
     </div>
 
+    <!-- Tabs -->
+    <div class="tab-container">
+        <div class="tab active" id="tab-all" onclick="switchTab(0)">ALL TRACKS</div>
+        <div class="tab" id="tab-favorites" onclick="switchTab(1)">❤️ FAVORITES (<span id="fav-count-tab">0</span>)</div>
+    </div>
+
+    <!-- Sticky Filters -->
     <div class="filters">
         <select id="era-filter">
             <option value="">ALL ERAS</option>
         </select>
         <input type="text" id="search" placeholder="SEARCH TRACKS OR NOTES..." style="flex:1; max-width:420px;">
     </div>
-
-    <div class="collapsible" onclick="toggleFavorites()">
-        ❤️ FAVORITES (<span id="fav-count">0</span>)
-    </div>
-    <div id="favorites-list" style="display:none; margin-bottom:30px;"></div>
-
-    <div class="section-break">◆ ALL TRACKS ◆</div>
 
     <div id="playlist"></div>
 
@@ -241,6 +212,7 @@
         let audio = new Audio();
         let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
         let currentEraFilter = "";
+        let currentTab = 0; // 0 = all, 1 = favorites
 
         fetch("tracker.tsv")
             .then(res => res.text())
@@ -272,8 +244,7 @@
                 }
 
                 populateEraFilter();
-                renderPlaylist(filterSongs());
-                renderFavorites();
+                renderCurrentList();
                 if (songs.length) playRandomSong();
             });
 
@@ -288,7 +259,7 @@
             });
             select.onchange = () => {
                 currentEraFilter = select.value;
-                renderPlaylist(filterSongs());
+                renderCurrentList();
             };
         }
 
@@ -303,6 +274,46 @@
             });
         }
 
+        function getCurrentList() {
+            if (currentTab === 1) {
+                return favorites.map(idx => songs[idx]).filter(Boolean);
+            }
+            return filterSongs();
+        }
+
+        function renderCurrentList() {
+            const container = document.getElementById('playlist');
+            container.innerHTML = '';
+            const list = getCurrentList();
+
+            list.forEach(song => {
+                const globalIdx = songs.indexOf(song);
+                const isPlaying = globalIdx === currentIndex;
+                const isLiked = favorites.includes(globalIdx);
+
+                const btn = document.createElement('button');
+                btn.className = `song-btn ${isPlaying ? 'playing' : ''}`;
+                btn.innerHTML = `
+                    ▶ ${song.name}
+                    <a href="${song.pillowLink}" target="_blank" class="download" title="Download">⬇</a>
+                    <span class="heart ${isLiked ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">
+                        ${isLiked ? '❤️' : '♡'}
+                    </span>
+                `;
+                btn.onclick = () => playSong(globalIdx);
+                container.appendChild(btn);
+            });
+
+            document.getElementById('fav-count-tab').textContent = favorites.length;
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-all').classList.toggle('active', tab === 0);
+            document.getElementById('tab-favorites').classList.toggle('active', tab === 1);
+            renderCurrentList();
+        }
+
         function playSong(index) {
             if (index < 0 || index >= songs.length) return;
             currentIndex = index;
@@ -312,8 +323,7 @@
             audio.play().catch(e => console.error("Playback failed:", e));
 
             updateNowPlaying();
-            renderPlaylist(filterSongs());
-            renderFavorites();
+            renderCurrentList();
         }
 
         function updateNowPlaying() {
@@ -329,6 +339,17 @@
             const isLiked = favorites.includes(currentIndex);
             btn.textContent = isLiked ? '❤️' : '♡';
             btn.style.color = isLiked ? '#ff4d94' : '#bb86fc';
+        }
+
+        function toggleFavorite(idx) {
+            if (favorites.includes(idx)) {
+                favorites = favorites.filter(i => i !== idx);
+            } else {
+                favorites.push(idx);
+            }
+            localStorage.setItem('favorites', JSON.stringify(favorites));
+            renderCurrentList();
+            if (idx === currentIndex) updateFavCurrentButton();
         }
 
         function playRandomSong() {
@@ -355,65 +376,7 @@
             playSong(prevIdx);
         }
 
-        function renderPlaylist(filteredSongs) {
-            const container = document.getElementById('playlist');
-            container.innerHTML = '';
-            filteredSongs.forEach(song => {
-                const globalIdx = songs.indexOf(song);
-                const isPlaying = globalIdx === currentIndex;
-                const isLiked = favorites.includes(globalIdx);
-
-                const btn = document.createElement('button');
-                btn.className = `song-btn ${isPlaying ? 'playing' : ''}`;
-                btn.innerHTML = `
-                    ▶ ${song.name}
-                    <a href="${song.pillowLink}" target="_blank" class="download" title="Download">⬇</a>
-                    <span class="heart ${isLiked ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">
-                        ${isLiked ? '❤️' : '♡'}
-                    </span>
-                `;
-                btn.onclick = () => playSong(globalIdx);
-                container.appendChild(btn);
-            });
-        }
-
-        function toggleFavorite(idx) {
-            if (favorites.includes(idx)) favorites = favorites.filter(i => i !== idx);
-            else favorites.push(idx);
-            localStorage.setItem('favorites', JSON.stringify(favorites));
-            renderPlaylist(filterSongs());
-            renderFavorites();
-            if (idx === currentIndex) updateFavCurrentButton();
-        }
-
-        function renderFavorites() {
-            const container = document.getElementById('favorites-list');
-            const countEl = document.getElementById('fav-count');
-            container.innerHTML = '';
-
-            const favSongs = favorites.map(idx => songs[idx]).filter(Boolean);
-            countEl.textContent = favSongs.length;
-
-            favSongs.forEach(song => {
-                const globalIdx = songs.indexOf(song);
-                const btn = document.createElement('button');
-                btn.className = `song-btn ${globalIdx === currentIndex ? 'playing' : ''}`;
-                btn.innerHTML = `
-                    ▶ ${song.name}
-                    <a href="${song.pillowLink}" target="_blank" class="download">⬇</a>
-                    <span class="heart liked" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">❤️</span>
-                `;
-                btn.onclick = () => playSong(globalIdx);
-                container.appendChild(btn);
-            });
-        }
-
-        function toggleFavorites() {
-            const list = document.getElementById('favorites-list');
-            list.style.display = list.style.display === 'none' ? 'block' : 'none';
-        }
-
-        // Event Listeners
+        // Controls
         document.getElementById('play-pause-btn').onclick = () => audio.paused ? audio.play() : audio.pause();
         document.getElementById('next-btn').onclick = nextSong;
         document.getElementById('prev-btn').onclick = prevSong;
@@ -434,23 +397,31 @@
             if (currentIndex >= 0) toggleFavorite(currentIndex);
         };
 
-        document.getElementById('search').onkeyup = () => renderPlaylist(filterSongs());
+        document.getElementById('search').onkeyup = () => renderCurrentList();
 
         const volumeSlider = document.getElementById('volume');
         volumeSlider.oninput = () => audio.volume = volumeSlider.value;
 
         const progress = document.getElementById('progress');
         audio.ontimeupdate = () => {
-            if (audio.duration) progress.value = (audio.currentTime / audio.duration) * 100;
-            document.getElementById('current-time').textContent = formatTime(audio.currentTime);
+            if (audio.duration) {
+                progress.value = (audio.currentTime / audio.duration) * 100;
+                document.getElementById('current-time').textContent = formatTime(audio.currentTime);
+            }
         };
 
         progress.oninput = e => {
             if (audio.duration) audio.currentTime = (e.target.value / 100) * audio.duration;
         };
 
-        audio.onloadedmetadata = () => document.getElementById('duration').textContent = formatTime(audio.duration);
-        audio.onended = () => repeatMode === 2 ? playSong(currentIndex) : nextSong();
+        audio.onloadedmetadata = () => {
+            document.getElementById('duration').textContent = formatTime(audio.duration);
+        };
+
+        audio.onended = () => {
+            if (repeatMode === 2) playSong(currentIndex);
+            else nextSong();
+        };
 
         function formatTime(s) {
             if (!s || isNaN(s)) return "0:00";
