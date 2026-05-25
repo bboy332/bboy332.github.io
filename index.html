@@ -5,16 +5,32 @@
     <title>My Pillowcase Playlist (Lil Uzi Vert)</title>
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap');
+
         body { 
-            font-family: Arial, sans-serif; 
-            background: #0a0a0a; 
+            font-family: 'VT323', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #1a0033 100%);
             color: #fff; 
             margin: 0; 
             padding: 20px; 
             text-align: center; 
+            min-height: 100vh;
+            background-attachment: fixed;
         }
-        h1 { margin: 10px 0 5px; }
-        .subtitle { color: #aaa; margin-bottom: 20px; }
+        
+        h1 { 
+            margin: 10px 0 5px; 
+            font-family: 'Press Start 2P', cursive;
+            color: #ff4d94;
+            text-shadow: 0 0 10px #ff4d94,
+                         0 0 20px #bb86fc;
+            letter-spacing: 3px;
+        }
+        .subtitle { 
+            color: #bb86fc; 
+            margin-bottom: 20px; 
+            text-shadow: 0 0 8px #bb86fc;
+        }
         
         #controls {
             position: sticky;
@@ -22,56 +38,89 @@
             z-index: 100;
             max-width: 720px;
             margin: 0 auto 20px;
-            background: #1a1a1a;
-            border-radius: 12px;
+            background: rgba(26, 26, 26, 0.95);
+            border: 3px solid #ff4d94;
+            border-radius: 16px;
             padding: 20px;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
+            box-shadow: 0 0 25px #ff4d94,
+                        0 0 40px rgba(187, 134, 252, 0.6);
         }
+        
         #now-playing { 
-            background: #222; 
-            padding: 15px; 
-            border-radius: 10px; 
+            background: #1a0033; 
+            padding: 18px; 
+            border-radius: 12px; 
             margin-bottom: 15px; 
             text-align: left; 
+            border: 2px solid #bb86fc;
+            box-shadow: inset 0 0 15px rgba(255, 77, 148, 0.3);
         }
-        #current-title a { color: #bb86fc; text-decoration: underline; }
+        #current-title a { 
+            color: #ff4d94; 
+            text-decoration: underline; 
+            text-shadow: 0 0 8px #ff4d94;
+        }
         
         button { 
             padding: 12px 16px; 
             margin: 4px; 
-            background: #333; 
-            color: white; 
-            border: none; 
+            background: #1f1f1f; 
+            color: #fff; 
+            border: 2px solid #bb86fc;
             border-radius: 8px; 
             cursor: pointer; 
+            font-family: 'VT323', monospace;
+            font-size: 18px;
+            transition: all 0.2s;
         }
-        button:hover { background: #555; }
-        button.active { background: #bb86fc; color: black; }
+        button:hover { 
+            background: #ff4d94; 
+            color: #000;
+            transform: scale(1.05);
+            box-shadow: 0 0 15px #ff4d94;
+        }
+        button.active { 
+            background: #bb86fc; 
+            color: black; 
+            border-color: #ff4d94;
+        }
 
         .song-btn { 
             display: block; 
             width: 100%; 
             max-width: 720px; 
-            margin: 6px auto; 
-            padding: 14px; 
+            margin: 8px auto; 
+            padding: 16px; 
             background: #1f1f1f; 
             color: #fff; 
-            border: none; 
-            border-radius: 10px; 
+            border: 2px solid #333;
+            border-radius: 12px; 
             text-align: left; 
             cursor: pointer; 
             position: relative;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
-        .song-btn:hover { background: #333; }
-        .song-btn.playing { background: #4a2b8a; }
+        .song-btn:hover { 
+            background: #2a002a; 
+            border-color: #ff4d94;
+            transform: translateX(8px);
+        }
+        .song-btn.playing { 
+            background: linear-gradient(90deg, #4a2b8a, #ff4d94);
+            border-color: #bb86fc;
+            box-shadow: 0 0 20px #ff4d94;
+        }
 
         .heart { 
             float: right; 
-            font-size: 22px; 
+            font-size: 26px; 
             cursor: pointer; 
             color: #555; 
             user-select: none;
+            transition: transform 0.2s;
         }
+        .heart:hover { transform: scale(1.3); }
         .heart.liked { 
             color: #ff4d94; 
         }
@@ -79,10 +128,11 @@
         .song-btn .download { 
             float: right; 
             margin-left: 12px; 
-            font-size: 18px; 
+            font-size: 20px; 
             text-decoration: none; 
-            color: #888;
+            color: #bb86fc;
         }
+        .song-btn .download:hover { color: #ff4d94; }
 
         .filters {
             max-width: 720px;
@@ -93,34 +143,62 @@
             flex-wrap: wrap;
         }
 
-        input[type="range"] { accent-color: #bb86fc; }
-        .now-playing-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+        select, input[type="text"] {
+            background: #1f1f1f;
+            color: #fff;
+            border: 2px solid #bb86fc;
+            padding: 12px;
+            border-radius: 8px;
+            font-family: 'VT323', monospace;
+        }
+
+        input[type="range"] { 
+            accent-color: #ff4d94; 
+        }
+        
+        .now-playing-controls { 
+            display: flex; 
+            align-items: center; 
+            gap: 10px; 
+            margin-top: 12px; 
+        }
+        
+        .collapsible {
+            cursor: pointer; 
+            padding: 15px; 
+            background: #1a0033; 
+            border: 2px solid #ff4d94;
+            border-radius: 12px; 
+            margin: 20px auto; 
+            max-width: 720px;
+            font-size: 20px;
+        }
     </style>
 </head>
 <body>
-    <h1>My Pillowcase Playlist</h1>
-    <div class="subtitle">Lil Uzi Vert Tracker</div>
+    <h1>💎 PILLOWCASE 💎</h1>
+    <div class="subtitle">LUV IS RAGE • LIL UZI VERT ARCHIVE</div>
 
     <div class="filters">
         <select id="era-filter">
-            <option value="">All Eras</option>
+            <option value="">ALL ERAS</option>
         </select>
-        <input type="text" id="search" placeholder="Search songs or notes..." style="flex:1; max-width:400px; padding:12px; border-radius:8px; border:none;">
+        <input type="text" id="search" placeholder="SEARCH TRACKS OR NOTES..." style="flex:1; max-width:400px;">
     </div>
 
     <div id="controls">
         <div id="now-playing">
-            <strong>Now Playing:</strong> 
+            <strong>NOW PLAYING:</strong> 
             <span id="current-title">—</span><br>
-            <span id="current-notes" style="font-size:0.9em; color:#bbb;"></span>
+            <span id="current-notes" style="font-size:1.1em; color:#bb86fc;"></span>
             
             <div class="now-playing-controls">
-                <button id="fav-current-btn" style="padding:8px 12px; font-size:22px; background:none; border:1px solid #555;">♡</button>
+                <button id="fav-current-btn" style="padding:8px 14px; font-size:26px; background:none; border:2px solid #ff4d94;">♡</button>
             </div>
         </div>
 
         <div>
-            <button id="shuffle-btn">🔀 Shuffle</button>
+            <button id="shuffle-btn">🔀 SHUFFLE</button>
             <button id="repeat-btn">🔁</button>
             <button id="prev-btn">⏮️</button>
             <button id="play-pause-btn">▶️</button>
@@ -128,29 +206,30 @@
         </div>
 
         <input type="range" id="progress" style="width:100%; margin:15px 0;" value="0">
-        <div style="display:flex; justify-content:space-between; font-size:0.9em;">
+        <div style="display:flex; justify-content:space-between; font-size:1.1em; color:#bb86fc;">
             <span id="current-time">0:00</span>
             <span id="duration">0:00</span>
         </div>
 
         <div style="margin-top:10px;">
-            <label>Volume: </label>
-            <input type="range" id="volume" min="0" max="1" step="0.01" value="1" style="width:200px;">
+            <label style="color:#bb86fc;">VOLUME: </label>
+            <input type="range" id="volume" min="0" max="1" step="0.01" value="1" style="width:220px;">
         </div>
     </div>
 
-    <div class="collapsible" onclick="toggleFavorites()" style="cursor:pointer; padding:15px; background:#222; border-radius:8px; margin:20px auto; max-width:720px;">
-        ❤️ Favorites (<span id="fav-count">0</span>)
+    <div class="collapsible" onclick="toggleFavorites()">
+        ❤️ FAVORITES (<span id="fav-count">0</span>)
     </div>
     <div id="favorites-list" style="display:none; margin-bottom:20px;"></div>
 
     <div id="playlist"></div>
 
     <script>
+        // (The full JavaScript from the previous version remains unchanged)
         let songs = [];
         let currentIndex = -1;
         let isShuffle = false;
-        let repeatMode = 0; // 0=off, 1=all, 2=one
+        let repeatMode = 0;
         let audio = new Audio();
         let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
         let currentEraFilter = "";
@@ -250,7 +329,7 @@
             const btn = document.getElementById('fav-current-btn');
             const isLiked = favorites.includes(currentIndex);
             btn.textContent = isLiked ? '❤️' : '♡';
-            btn.style.color = isLiked ? '#ff4d94' : '#888';
+            btn.style.color = isLiked ? '#ff4d94' : '#bb86fc';
         }
 
         function playRandomSong() {
@@ -260,7 +339,6 @@
 
         function nextSong() {
             if (repeatMode === 2) return playSong(currentIndex);
-            
             let nextIdx = currentIndex;
             if (isShuffle) {
                 do { nextIdx = Math.floor(Math.random() * songs.length); } 
@@ -342,7 +420,7 @@
             list.style.display = list.style.display === 'none' ? 'block' : 'none';
         }
 
-        // Event Listeners
+        // Controls
         document.getElementById('play-pause-btn').onclick = () => audio.paused ? audio.play() : audio.pause();
         document.getElementById('next-btn').onclick = nextSong;
         document.getElementById('prev-btn').onclick = prevSong;
@@ -396,7 +474,6 @@
             return `${m}:${sec < 10 ? '0' : ''}${sec}`;
         }
 
-        // Keyboard shortcuts
         document.addEventListener('keydown', e => {
             if (e.target.tagName === 'INPUT') return;
             switch(e.key) {
