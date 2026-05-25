@@ -17,11 +17,15 @@
         .subtitle { color: #aaa; margin-bottom: 20px; }
         
         #controls {
+            position: sticky;
+            top: 0;
+            z-index: 100;
             max-width: 720px;
-            margin: 20px auto;
+            margin: 0 auto 20px;
             background: #1a1a1a;
             border-radius: 12px;
             padding: 20px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.6);
         }
         #now-playing { 
             background: #222; 
@@ -60,11 +64,21 @@
         }
         .song-btn:hover { background: #333; }
         .song-btn.playing { background: #4a2b8a; }
-        .song-btn .heart { float: right; font-size: 20px; cursor: pointer; color: #555; }
-        .song-btn .heart.liked { color: #ff4d94; }
+
+        .heart { 
+            float: right; 
+            font-size: 22px; 
+            cursor: pointer; 
+            color: #555; 
+            user-select: none;
+        }
+        .heart.liked { 
+            color: #ff4d94; 
+        }
+
         .song-btn .download { 
             float: right; 
-            margin-left: 10px; 
+            margin-left: 12px; 
             font-size: 18px; 
             text-decoration: none; 
             color: #888;
@@ -80,6 +94,7 @@
         }
 
         input[type="range"] { accent-color: #bb86fc; }
+        .now-playing-controls { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
     </style>
 </head>
 <body>
@@ -98,6 +113,10 @@
             <strong>Now Playing:</strong> 
             <span id="current-title">—</span><br>
             <span id="current-notes" style="font-size:0.9em; color:#bbb;"></span>
+            
+            <div class="now-playing-controls">
+                <button id="fav-current-btn" style="padding:8px 12px; font-size:22px; background:none; border:1px solid #555;">♡</button>
+            </div>
         </div>
 
         <div>
@@ -131,7 +150,7 @@
         let songs = [];
         let currentIndex = -1;
         let isShuffle = false;
-        let repeatMode = 0; // 0 = off, 1 = all, 2 = one
+        let repeatMode = 0; // 0=off, 1=all, 2=one
         let audio = new Audio();
         let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
         let currentEraFilter = "";
@@ -160,18 +179,16 @@
                             notes: cols[2] || "",
                             era: era,
                             link: playableLink,
-                            pillowLink: pillowLink,
-                            fullRow: cols
+                            pillowLink: pillowLink
                         });
                     }
                 }
 
                 populateEraFilter();
-                renderPlaylist(songs);
+                renderPlaylist(filterSongs());
                 renderFavorites();
                 if (songs.length) playRandomSong();
-            })
-            .catch(err => console.error("Failed to load tracker:", err));
+            });
 
         function populateEraFilter() {
             const eras = [...new Set(songs.map(s => s.era))].sort();
@@ -182,9 +199,10 @@
                 opt.textContent = era;
                 select.appendChild(opt);
             });
+            
             select.onchange = () => {
                 currentEraFilter = select.value;
-                renderPlaylist(songs);
+                renderPlaylist(filterSongs());
             };
         }
 
@@ -194,7 +212,7 @@
                 const eraMatch = !currentEraFilter || song.era === currentEraFilter;
                 const textMatch = !term || 
                     song.name.toLowerCase().includes(term) || 
-                    song.notes.toLowerCase().includes(term);
+                    (song.notes && song.notes.toLowerCase().includes(term));
                 return eraMatch && textMatch;
             });
         }
@@ -210,14 +228,29 @@
                 alert("Could not play this track. Link might be dead.");
             });
 
+            updateNowPlaying();
+            renderPlaylist(filterSongs());
+            renderFavorites();
+        }
+
+        function updateNowPlaying() {
+            const song = songs[currentIndex];
+            if (!song) return;
+
             document.getElementById('current-title').innerHTML = 
                 `<a href="${song.pillowLink}" target="_blank">${song.name}</a>`;
 
             document.getElementById('current-notes').innerHTML = 
                 `<strong>Era:</strong> ${song.era}<br><strong>Notes:</strong> ${song.notes || '—'}`;
 
-            renderPlaylist(songs);
-            renderFavorites();
+            updateFavCurrentButton();
+        }
+
+        function updateFavCurrentButton() {
+            const btn = document.getElementById('fav-current-btn');
+            const isLiked = favorites.includes(currentIndex);
+            btn.textContent = isLiked ? '❤️' : '♡';
+            btn.style.color = isLiked ? '#ff4d94' : '#888';
         }
 
         function playRandomSong() {
@@ -226,10 +259,8 @@
         }
 
         function nextSong() {
-            if (repeatMode === 2) { // Repeat one
-                playSong(currentIndex);
-                return;
-            }
+            if (repeatMode === 2) return playSong(currentIndex);
+            
             let nextIdx = currentIndex;
             if (isShuffle) {
                 do { nextIdx = Math.floor(Math.random() * songs.length); } 
@@ -262,7 +293,9 @@
                 btn.innerHTML = `
                     ▶ ${song.name}
                     <a href="${song.pillowLink}" target="_blank" class="download" title="Download">⬇</a>
-                    <span class="heart ${isLiked ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">❤️</span>
+                    <span class="heart ${isLiked ? 'liked' : ''}" onclick="event.stopImmediatePropagation(); toggleFavorite(${globalIdx});">
+                        ${isLiked ? '❤️' : '♡'}
+                    </span>
                 `;
                 
                 btn.onclick = () => playSong(globalIdx);
@@ -279,6 +312,7 @@
             localStorage.setItem('favorites', JSON.stringify(favorites));
             renderPlaylist(filterSongs());
             renderFavorites();
+            if (idx === currentIndex) updateFavCurrentButton();
         }
 
         function renderFavorites() {
@@ -325,6 +359,10 @@
             btn.classList.toggle('active', repeatMode > 0);
         };
 
+        document.getElementById('fav-current-btn').onclick = () => {
+            if (currentIndex >= 0) toggleFavorite(currentIndex);
+        };
+
         document.getElementById('search').onkeyup = () => renderPlaylist(filterSongs());
 
         const volumeSlider = document.getElementById('volume');
@@ -362,16 +400,10 @@
         document.addEventListener('keydown', e => {
             if (e.target.tagName === 'INPUT') return;
             switch(e.key) {
-                case ' ': 
-                    e.preventDefault(); 
-                    audio.paused ? audio.play() : audio.pause(); 
-                    break;
+                case ' ': e.preventDefault(); audio.paused ? audio.play() : audio.pause(); break;
                 case 'ArrowRight': nextSong(); break;
                 case 'ArrowLeft': prevSong(); break;
-                case 'f': 
-                case 'F': 
-                    toggleFavorite(currentIndex); 
-                    break;
+                case 'f': case 'F': if (currentIndex >= 0) toggleFavorite(currentIndex); break;
             }
         });
     </script>
